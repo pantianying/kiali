@@ -78,7 +78,7 @@ const basicAuth = (username: UserName, password: Password) => {
 const newRequest = <P>(method: HTTP_VERBS, url: string, queryParams: any, data: any) =>
   axios.request<P>({
     method: method,
-    url: url,
+    url: url.startsWith('/') ? url : '/' + url,
     data: data,
     headers: getHeadersWithMethod(method),
     params: queryParams

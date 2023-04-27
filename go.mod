@@ -12,6 +12,7 @@ require (
 	github.com/openshift/api v0.0.0-20200221181648-8ce0047d664f
 	github.com/prometheus/client_golang v1.11.1
 	github.com/prometheus/common v0.26.0
+	github.com/rs/cors v1.9.0
 	github.com/rs/zerolog v1.20.0
 	github.com/stretchr/testify v1.7.1
 	go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux v0.27.0
