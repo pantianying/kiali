@@ -8,6 +8,7 @@ import (
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
+	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
@@ -125,11 +126,7 @@ func (s *Server) Stop() {
 }
 
 func corsAllowed(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept")
-		next.ServeHTTP(w, r)
-	})
+	return cors.AllowAll().Handler(next)
 }
 
 func configureGzipHandler(handler http.Handler) http.Handler {
