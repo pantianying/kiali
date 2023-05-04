@@ -163,3 +163,4 @@
     "stepDefinitions": "cypress/integration/**/*.{js,ts}"
   }
 }
+
