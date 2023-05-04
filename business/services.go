@@ -79,7 +79,7 @@ func (in *SvcService) GetServiceList(ctx context.Context, criteria ServiceCriter
 			return nil, err
 		}
 
-		singleClusterSVCList, err := in.getServiceList(ctx, criteria, cluster)
+		singleClusterSVCList, err := in.GetServiceListForCluster(ctx, criteria, cluster)
 		if err != nil {
 			if cluster == kubernetes.HomeClusterName {
 				return nil, err
@@ -97,7 +97,7 @@ func (in *SvcService) GetServiceList(ctx context.Context, criteria ServiceCriter
 	return &serviceList, nil
 }
 
-func (in *SvcService) getServiceList(ctx context.Context, criteria ServiceCriteria, cluster string) (*models.ServiceList, error) {
+func (in *SvcService) GetServiceListForCluster(ctx context.Context, criteria ServiceCriteria, cluster string) (*models.ServiceList, error) {
 	var (
 		svcs            []core_v1.Service
 		rSvcs           []*kubernetes.RegistryService
@@ -202,9 +202,9 @@ func (in *SvcService) getServiceList(ctx context.Context, criteria ServiceCriter
 		go func() {
 			defer wg.Done()
 			var err2 error
-			istioConfigList, err2 = in.businessLayer.IstioConfig.GetIstioConfigList(ctx, criteria)
+			istioConfigList, err2 = in.businessLayer.IstioConfig.GetIstioConfigListPerCluster(ctx, criteria, cluster)
 			if err2 != nil {
-				log.Errorf("Error fetching IstioConfigList per namespace %s: %s", criteria.Namespace, err2)
+				log.Errorf("Error fetching IstioConfigList per cluster %s per namespace %s: %s", cluster, criteria.Namespace, err2)
 				errChan <- err2
 			}
 		}()
@@ -224,7 +224,7 @@ func (in *SvcService) getServiceList(ctx context.Context, criteria ServiceCriter
 	if criteria.IncludeHealth {
 		for i, sv := range services.Services {
 			// TODO: Fix health for multi-cluster
-			services.Services[i].Health, err = in.businessLayer.Health.GetServiceHealth(ctx, criteria.Namespace, sv.Name, criteria.RateInterval, criteria.QueryTime, sv.ParseToService())
+			services.Services[i].Health, err = in.businessLayer.Health.GetServiceHealth(ctx, criteria.Namespace, sv.Cluster, sv.Name, criteria.RateInterval, criteria.QueryTime, sv.ParseToService())
 			if err != nil {
 				log.Errorf("Error fetching health per service %s: %s", sv.Name, err)
 			}
@@ -523,7 +523,7 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 		go func(ctx context.Context) {
 			defer wg.Done()
 			var err2 error
-			ws, err2 = in.businessLayer.Workload.fetchWorkloads(ctx, namespace, labelsSelector)
+			ws, err2 = in.businessLayer.Workload.fetchWorkloadsFromCluster(ctx, cluster, namespace, labelsSelector)
 			if err2 != nil {
 				log.Errorf("Error fetching Workloads per namespace %s and service %s: %s", namespace, service, err2)
 				errChan <- err2
@@ -580,7 +580,7 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 		defer wg.Done()
 		var err2 error
 		// TODO: Fix health for multi-cluster
-		hth, err2 = in.businessLayer.Health.GetServiceHealth(ctx, namespace, service, interval, queryTime, &svc)
+		hth, err2 = in.businessLayer.Health.GetServiceHealth(ctx, namespace, cluster, service, interval, queryTime, &svc)
 		if err2 != nil {
 			errChan <- err2
 		}
@@ -590,7 +590,7 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 	go func(ctx context.Context) {
 		defer wg.Done()
 		var err2 error
-		nsmtls, err2 = in.businessLayer.TLS.NamespaceWidemTLSStatus(ctx, namespace)
+		nsmtls, err2 = in.businessLayer.TLS.NamespaceWidemTLSStatus(ctx, namespace, cluster)
 		if err2 != nil {
 			errChan <- err2
 		}
@@ -611,7 +611,7 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 			IncludeServiceEntries:  true,
 			IncludeVirtualServices: true,
 		}
-		istioConfigList, err2 = in.businessLayer.IstioConfig.GetIstioConfigList(ctx, criteria)
+		istioConfigList, err2 = in.businessLayer.IstioConfig.GetIstioConfigListPerCluster(ctx, criteria, cluster)
 		if err2 != nil {
 			log.Errorf("Error fetching IstioConfigList per namespace %s: %s", criteria.Namespace, err2)
 			errChan <- err2
@@ -633,7 +633,7 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 			errChan <- fmt.Errorf("client not found for cluster: %s", cluster)
 			return
 		}
-		vsCreate, vsUpdate, vsDelete = getPermissions(context.TODO(), userClient, namespace, kubernetes.VirtualServices)
+		vsCreate, vsUpdate, vsDelete = getPermissions(context.TODO(), userClient, cluster, namespace, kubernetes.VirtualServices)
 	}()
 
 	wg.Wait()
@@ -703,6 +703,8 @@ func (in *SvcService) GetServiceDetails(ctx context.Context, cluster, namespace,
 		// On ServiceEntries cases the Service name is the hostname
 		s.ServiceEntries = kubernetes.FilterServiceEntriesByHostname(istioConfigList.ServiceEntries, s.Service.Name)
 	}
+	s.Cluster = cluster
+
 	return &s, nil
 }
 

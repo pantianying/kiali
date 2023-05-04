@@ -30,7 +30,7 @@ export function useServiceDetail(
 
     setIsLoading(true); // Mark as loading
     let getDetailPromise = API.getServiceDetail(namespace, serviceName, false, cluster, duration);
-    let getGwPromise = API.getAllIstioConfigs([], ['gateways'], false, '', '');
+    let getGwPromise = API.getAllIstioConfigs([], ['gateways'], false, '', '', cluster);
     let getPeerAuthsPromise = API.getIstioConfig(namespace, ['peerauthentications'], false, '', '');
 
     const allPromise = new CancelablePromise(Promise.all([getDetailPromise, getGwPromise, getPeerAuthsPromise]));

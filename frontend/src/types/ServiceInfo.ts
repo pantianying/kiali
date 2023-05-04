@@ -60,6 +60,7 @@ export interface Service {
   externalName: string;
   labels?: { [key: string]: string };
   selectors?: { [key: string]: string };
+  cluster?: string;
 }
 
 export interface ServiceDetailsInfo {
@@ -78,6 +79,7 @@ export interface ServiceDetailsInfo {
   namespaceMTLS?: TLSStatus;
   validations: Validations;
   additionalDetails: AdditionalItem[];
+  cluster?: string;
 }
 
 export function getServiceDetailsUpdateLabel(serviceDetails: ServiceDetailsInfo | null) {

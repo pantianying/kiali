@@ -9,7 +9,6 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/kiali/kiali/business"
-	"github.com/kiali/kiali/kubernetes"
 	"github.com/kiali/kiali/models"
 	"github.com/kiali/kiali/util"
 )
@@ -104,10 +103,8 @@ func ServiceDetails(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	cluster := params["cluster"]
-	if cluster == "" {
-		cluster = kubernetes.HomeClusterName
-	}
+	cluster := clusterNameFromQuery(queryParams)
+
 	namespace := params["namespace"]
 	service := params["service"]
 	queryTime := util.Clock.Now()
@@ -125,7 +122,7 @@ func ServiceDetails(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			istioConfigValidations, errValidations = business.Validations.GetValidations(r.Context(), namespace, service, "")
+			istioConfigValidations, errValidations = business.Validations.GetValidations(r.Context(), cluster, namespace, service, "")
 		}()
 	}
 
@@ -169,7 +166,8 @@ func ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	params := mux.Vars(r)
-	cluster := params["cluster"]
+	cluster := clusterNameFromQuery(queryParams)
+
 	namespace := params["namespace"]
 	service := params["service"]
 	queryTime := util.Clock.Now()
@@ -192,7 +190,7 @@ func ServiceUpdate(w http.ResponseWriter, r *http.Request) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			istioConfigValidations, errValidations = business.Validations.GetValidations(r.Context(), namespace, service, "")
+			istioConfigValidations, errValidations = business.Validations.GetValidations(r.Context(), cluster, namespace, service, "")
 		}()
 	}
 

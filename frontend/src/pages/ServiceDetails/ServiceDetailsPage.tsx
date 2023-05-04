@@ -7,7 +7,7 @@ import ServiceId from '../../types/ServiceId';
 import IstioMetricsContainer from '../../components/Metrics/IstioMetrics';
 import { MetricsObjectTypes } from '../../types/Metrics';
 import { KialiAppState } from '../../store/Store';
-import { DurationInSeconds, HomeClusterName, TimeInMilliseconds } from '../../types/Common';
+import { DurationInSeconds, TimeInMilliseconds } from '../../types/Common';
 import ParameterizedTabs, { activeTab } from '../../components/Tab/Tabs';
 import ServiceInfo from './ServiceInfo';
 import TracesComponent from 'components/JaegerIntegration/TracesComponent';
@@ -66,10 +66,10 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
   constructor(props: ServiceDetailsProps) {
     super(props);
     const urlParams = new URLSearchParams(this.props.location.search);
-    const cluster = urlParams.get('cluster');
+    const cluster = urlParams.get('cluster') || undefined;
     this.state = {
       // Because null is not the same as undefined and urlParams.get(...) returns null.
-      cluster: cluster ?? undefined,
+      cluster: cluster,
       currentTab: activeTab(tabName, defaultTab),
       gateways: [],
       k8sGateways: [],
@@ -102,7 +102,17 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
   private fetchService = () => {
     this.promises.cancelAll();
     this.promises
-      .register('gateways', API.getAllIstioConfigs([], ['gateways', 'k8sgateways'], false, '', ''))
+      .register(
+        'gateways',
+        API.getAllIstioConfigs(
+          [this.props.match.params.namespace],
+          ['gateways', 'k8sgateways'],
+          false,
+          '',
+          '',
+          this.state.cluster
+        )
+      )
       .then(response => {
         const gws: Gateway[] = [];
         const k8sGws: K8sGateway[] = [];
@@ -140,10 +150,17 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
         this.setState({ error: msg });
       });
 
-    API.getIstioConfig(this.props.match.params.namespace, ['peerauthentications'], false, '', '')
+    API.getAllIstioConfigs(
+      [this.props.match.params.namespace],
+      ['peerauthentications'],
+      false,
+      '',
+      '',
+      this.state.cluster
+    )
       .then(results => {
         this.setState({
-          peerAuthentications: results.data.peerAuthentications
+          peerAuthentications: results.data[this.props.match.params.namespace].peerAuthentications
         });
       })
       .catch(error => {
@@ -155,6 +172,7 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
     const overTab = (
       <Tab eventKey={0} title="Overview" key="Overview">
         <ServiceInfo
+          cluster={this.state.cluster ? this.state.cluster : ''}
           namespace={this.props.match.params.namespace}
           service={this.props.match.params.service}
           serviceDetails={this.state.serviceDetails}
@@ -172,6 +190,7 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
           itemType={MetricsObjectTypes.SERVICE}
           lastRefreshAt={this.props.lastRefreshAt}
           namespace={this.props.match.params.namespace}
+          cluster={this.state.cluster}
         />
       </Tab>
     );
@@ -183,7 +202,7 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
           namespace={this.props.match.params.namespace}
           object={this.props.match.params.service}
           objectType={MetricsObjectTypes.SERVICE}
-          cluster={HomeClusterName}
+          cluster={this.state.cluster}
           direction={'inbound'}
         />
       </Tab>
@@ -197,7 +216,7 @@ class ServiceDetails extends React.Component<ServiceDetailsProps, ServiceDetails
           <TracesComponent
             lastRefreshAt={this.props.lastRefreshAt}
             namespace={this.props.match.params.namespace}
-            cluster={HomeClusterName}
+            cluster={this.state.cluster}
             target={this.props.match.params.service}
             targetKind={'service'}
           />

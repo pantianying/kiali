@@ -79,7 +79,12 @@ class WorkloadInfo extends React.Component<WorkloadInfoProps, WorkloadInfoState>
     if (!this.props.workload) {
       return;
     }
-    this.graphDataSource.fetchForWorkload(this.props.duration, this.props.namespace, this.props.workload.name);
+    this.graphDataSource.fetchForWorkload(
+      this.props.duration,
+      this.props.namespace,
+      this.props.workload.name,
+      this.props.workload.cluster
+    );
     this.setState({
       validations: this.workloadValidations(this.props.workload)
     });
@@ -230,7 +235,7 @@ class WorkloadInfo extends React.Component<WorkloadInfoProps, WorkloadInfoState>
   render() {
     const workload = this.props.workload;
     const pods = workload?.pods || [];
-    const istioConfigItems = this.state.workloadIstioConfig ? toIstioItems(this.state.workloadIstioConfig) : [];
+    const istioConfigItems = this.state.workloadIstioConfig ? toIstioItems(this.state.workloadIstioConfig, '') : [];
     // Helper to iterate at same time on workloadIstioConfig resources and validations
     const wkIstioTypes = [
       { field: 'gateways', validation: 'gateway' },

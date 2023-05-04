@@ -264,6 +264,7 @@ func (in *NamespaceService) GetNamespaces(ctx context.Context) ([]models.Namespa
 		}
 	}
 
+	// store only the filtered set of namespaces in cache for the token
 	if kialiCache != nil && in.homeClusterUserClient != nil {
 		// just get the home cluster token because it is assumed tokens are identical across all clusters
 		kialiCache.SetNamespaces(in.homeClusterUserClient.GetToken(), resultns)
@@ -391,14 +392,24 @@ func (in *NamespaceService) getNamespacesByCluster(cluster string) ([]models.Nam
 		}
 	}
 
-	result := namespaces
+	return namespaces, nil
+}
 
-	if kialiCache != nil && in.homeClusterUserClient != nil {
-		// Set namespace by user token
-		kialiCache.SetNamespaces(in.homeClusterUserClient.GetToken(), result)
+// GetNamespacesForCluster is just a convenience routine that filters GetNamespaces for a particular cluster
+func (in *NamespaceService) GetNamespacesForCluster(ctx context.Context, cluster string) ([]models.Namespace, error) {
+	tokenNamespaces, err := in.GetNamespaces(ctx)
+	if err != nil {
+		return nil, err
 	}
 
-	return result, nil
+	clusterNamespaces := []models.Namespace{}
+	for _, ns := range tokenNamespaces {
+		if ns.Cluster == cluster {
+			clusterNamespaces = append(clusterNamespaces, ns)
+		}
+	}
+
+	return clusterNamespaces, nil
 }
 
 // addIncludedNamespaces will look at all the namespaces and return all of them that match the Include list.
@@ -571,6 +582,9 @@ func (in *NamespaceService) GetNamespaceByCluster(ctx context.Context, namespace
 				return nil, errC
 			}
 		} else {
+			if _, ok := in.userClients[cluster]; !ok {
+				return nil, fmt.Errorf("Cluster [%s] is not found or is not accessible for Kiali", cluster)
+			}
 			ns, errC = in.userClients[cluster].GetNamespace(namespace)
 			if errC != nil {
 				return nil, errC

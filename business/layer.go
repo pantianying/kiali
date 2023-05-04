@@ -18,24 +18,25 @@ import (
 // A business layer is created per token/user. Any data that
 // needs to be saved across layers is saved in the Kiali Cache.
 type Layer struct {
-	App            AppService
-	Health         HealthService
-	IstioConfig    IstioConfigService
-	IstioStatus    IstioStatusService
-	IstioCerts     IstioCertsService
-	Jaeger         JaegerService
-	k8sClients     map[string]kubernetes.ClientInterface // Key is the cluster name
-	Mesh           MeshService
-	Namespace      NamespaceService
-	OpenshiftOAuth OpenshiftOAuthService
-	ProxyLogging   ProxyLoggingService
-	ProxyStatus    ProxyStatusService
-	RegistryStatus RegistryStatusService
-	Svc            SvcService
-	TLS            TLSService
-	TokenReview    TokenReviewService
-	Validations    IstioValidationsService
-	Workload       WorkloadService
+	App              AppService
+	Health           HealthService
+	IstioConfig      IstioConfigService
+	IstioStatus      IstioStatusService
+	IstioCerts       IstioCertsService
+	Jaeger           JaegerService
+	k8sClients       map[string]kubernetes.ClientInterface // Key is the cluster name
+	Mesh             MeshService
+	Namespace        NamespaceService
+	OpenshiftOAuth   OpenshiftOAuthService
+	ProxyLogging     ProxyLoggingService
+	ProxyStatus      ProxyStatusService
+	RegistryStatus   RegistryStatusService
+	RegistryStatuses map[string]RegistryStatusService // Key is the cluster name
+	Svc              SvcService
+	TLS              TLSService
+	TokenReview      TokenReviewService
+	Validations      IstioValidationsService
+	Workload         WorkloadService
 }
 
 // Global clientfactory and prometheus clients.
@@ -164,8 +165,8 @@ func NewWithBackends(userClients map[string]kubernetes.ClientInterface, kialiSAC
 	homeClusterName := config.Get().KubernetesConfig.ClusterName
 	// TODO: Modify the k8s argument to other services to pass the whole k8s map if needed
 	temporaryLayer.App = AppService{prom: prom, userClients: userClients, businessLayer: temporaryLayer}
-	temporaryLayer.Health = HealthService{prom: prom, businessLayer: temporaryLayer}
-	temporaryLayer.IstioConfig = IstioConfigService{k8s: userClients[homeClusterName], cache: kialiCache, businessLayer: temporaryLayer}
+	temporaryLayer.Health = HealthService{prom: prom, businessLayer: temporaryLayer, userClients: userClients}
+	temporaryLayer.IstioConfig = IstioConfigService{config: *config.Get(), userClients: userClients, kialiCache: kialiCache, businessLayer: temporaryLayer}
 	temporaryLayer.IstioStatus = IstioStatusService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
 	temporaryLayer.IstioCerts = IstioCertsService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
 	temporaryLayer.Jaeger = JaegerService{loader: jaegerClient, businessLayer: temporaryLayer}
@@ -173,15 +174,21 @@ func NewWithBackends(userClients map[string]kubernetes.ClientInterface, kialiSAC
 	temporaryLayer.Mesh = NewMeshService(userClients[homeClusterName], temporaryLayer, nil)
 	temporaryLayer.Namespace = NewNamespaceService(userClients, kialiSAClients)
 	temporaryLayer.OpenshiftOAuth = OpenshiftOAuthService{k8s: userClients[homeClusterName]}
-	temporaryLayer.ProxyStatus = ProxyStatusService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
+	temporaryLayer.ProxyStatus = ProxyStatusService{kialiSAClients: kialiSAClients, kialiCache: kialiCache, businessLayer: temporaryLayer}
 	// Out of order because it relies on ProxyStatus
-	temporaryLayer.ProxyLogging = ProxyLoggingService{k8s: userClients[homeClusterName], proxyStatus: &temporaryLayer.ProxyStatus}
+	temporaryLayer.ProxyLogging = ProxyLoggingService{userClients: userClients, proxyStatus: &temporaryLayer.ProxyStatus}
 	temporaryLayer.RegistryStatus = RegistryStatusService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
-	temporaryLayer.TLS = TLSService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
+	temporaryLayer.TLS = TLSService{userClients: userClients, kialiCache: kialiCache, businessLayer: temporaryLayer}
 	temporaryLayer.Svc = SvcService{config: *config.Get(), kialiCache: kialiCache, businessLayer: temporaryLayer, prom: prom, userClients: userClients}
 	temporaryLayer.TokenReview = NewTokenReview(userClients[homeClusterName])
 	temporaryLayer.Validations = IstioValidationsService{k8s: userClients[homeClusterName], businessLayer: temporaryLayer}
-	temporaryLayer.Workload = *NewWorkloadService(userClients[homeClusterName], prom, kialiCache, temporaryLayer, config.Get())
+	temporaryLayer.Workload = *NewWorkloadService(userClients, prom, kialiCache, temporaryLayer, config.Get())
+
+	registryStatuses := make(map[string]RegistryStatusService)
+	for name, client := range userClients {
+		registryStatuses[name] = RegistryStatusService{k8s: client, businessLayer: temporaryLayer}
+	}
+	temporaryLayer.RegistryStatuses = registryStatuses
 
 	return temporaryLayer
 }

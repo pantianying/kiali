@@ -95,7 +95,7 @@ func (in *AppService) GetAppList(ctx context.Context, criteria AppCriteria) (mod
 			wg.Add(1)
 			go func(c string) {
 				defer wg.Done()
-				nsApps, error2 := fetchNamespaceApps(ctx, in.businessLayer, criteria.Namespace, c, "")
+				nsApps, error2 := in.fetchNamespaceApps(ctx, criteria.Namespace, c, "")
 				if error2 != nil {
 					resultsCh <- result{cluster: c, nsApps: nil, err: error2}
 				} else {
@@ -212,7 +212,7 @@ func (in *AppService) GetAppList(ctx context.Context, criteria AppCriteria) (mod
 				}
 			}
 			if criteria.IncludeHealth {
-				appItem.Health, err = in.businessLayer.Health.GetAppHealth(ctx, criteria.Namespace, appItem.Name, criteria.RateInterval, criteria.QueryTime, valueApp)
+				appItem.Health, err = in.businessLayer.Health.GetAppHealth(ctx, criteria.Namespace, valueApp.cluster, appItem.Name, criteria.RateInterval, criteria.QueryTime, valueApp)
 				if err != nil {
 					log.Errorf("Error fetching Health in namespace %s for app %s: %s", criteria.Namespace, appItem.Name, err)
 				}
@@ -250,7 +250,7 @@ func (in *AppService) GetAppDetails(ctx context.Context, criteria AppCriteria) (
 	if cluster == "null" || cluster == "" {
 		cluster = kubernetes.HomeClusterName
 	}
-	namespaceApps, err := fetchNamespaceApps(ctx, in.businessLayer, criteria.Namespace, cluster, criteria.AppName)
+	namespaceApps, err := in.fetchNamespaceApps(ctx, criteria.Namespace, cluster, criteria.AppName)
 	if err != nil {
 		return *appInstance, err
 	}
@@ -278,11 +278,13 @@ func (in *AppService) GetAppDetails(ctx context.Context, criteria AppCriteria) (
 	}
 	(*appInstance).Runtimes = NewDashboardsService(ns, nil).GetCustomDashboardRefs(criteria.Namespace, criteria.AppName, "", pods)
 	if criteria.IncludeHealth {
-		(*appInstance).Health, err = in.businessLayer.Health.GetAppHealth(ctx, criteria.Namespace, criteria.AppName, criteria.RateInterval, criteria.QueryTime, appDetails)
+		(*appInstance).Health, err = in.businessLayer.Health.GetAppHealth(ctx, criteria.Namespace, criteria.Cluster, criteria.AppName, criteria.RateInterval, criteria.QueryTime, appDetails)
 		if err != nil {
 			log.Errorf("Error fetching Health in namespace %s for app %s: %s", criteria.Namespace, criteria.AppName, err)
 		}
 	}
+
+	(*appInstance).Cluster = appDetails.cluster
 
 	return *appInstance, nil
 }
@@ -332,7 +334,7 @@ func castAppDetails(allEntities namespaceApps, ss *models.ServiceList, w *models
 // Helper method to fetch all applications for a given namespace.
 // Optionally if appName parameter is provided, it filters apps for that name.
 // Return an error on any problem.
-func fetchNamespaceApps(ctx context.Context, layer *Layer, namespace string, cluster string, appName string) (namespaceApps, error) {
+func (in *AppService) fetchNamespaceApps(ctx context.Context, namespace string, cluster string, appName string) (namespaceApps, error) {
 	var ss *models.ServiceList
 	var ws models.Workloads
 	cfg := config.Get()
@@ -345,26 +347,26 @@ func fetchNamespaceApps(ctx context.Context, layer *Layer, namespace string, clu
 
 	// Check if user has access to the namespace (RBAC) in cache scenarios and/or
 	// if namespace is accessible from Kiali (Deployment.AccessibleNamespaces)
-	if _, err := layer.Namespace.GetNamespaceByCluster(ctx, namespace, cluster); err != nil {
+	if _, err := in.businessLayer.Namespace.GetNamespaceByCluster(ctx, namespace, cluster); err != nil {
 		return nil, err
 	}
 
 	var err error
-	ws, err = fetchWorkloadsFromCluster(ctx, layer, cluster, namespace, appNameSelector)
+	ws, err = in.businessLayer.Workload.fetchWorkloadsFromCluster(ctx, cluster, namespace, appNameSelector)
 	if err != nil {
 		return nil, err
 	}
 	allEntities := make(namespaceApps)
 	for _, w := range ws {
 		// Check if namespace is cached
-		criteria := ServiceCriteria{
+		serviceCriteria := ServiceCriteria{
 			Namespace:              namespace,
 			IncludeHealth:          false,
 			IncludeIstioResources:  false,
 			IncludeOnlyDefinitions: true,
 			ServiceSelector:        labels.Set(w.Labels).String(),
 		}
-		ss, err = layer.Svc.GetServiceList(ctx, criteria)
+		ss, err = in.businessLayer.Svc.GetServiceListForCluster(ctx, serviceCriteria, cluster)
 		if err != nil {
 			return nil, err
 		}
