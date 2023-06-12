@@ -649,3 +649,7 @@ export function deleteServiceTrafficRouting(
 export const getCrippledFeatures = (): Promise<Response<KialiCrippledFeatures>> => {
   return newRequest<KialiCrippledFeatures>(HTTP_VERBS.GET, urls.crippledFeatures, {}, {});
 };
+
+export const getClusterList = (): Promise<Response<KialiCrippledFeatures>> => {
+  return newRequest<KialiCrippledFeatures>(HTTP_VERBS.GET, urls.clusterList, {}, {});
+};

@@ -12,6 +12,7 @@ import { Paths } from './config';
 import ServiceDetailsPageContainer from './pages/ServiceDetails/ServiceDetailsPage';
 import IstioConfigNewPageContainer from './pages/IstioConfigNew/IstioConfigNewPage';
 import MeshPage from 'pages/Mesh/MeshPage';
+import Dashboard from './pages/Dashboard';
 
 /**
  * Return array of objects that describe vertical menu
@@ -61,6 +62,10 @@ const navMenuItems: MenuItem[] = [
 const defaultRoute = '/overview';
 
 const pathRoutes: Path[] = [
+  {
+    path: '/dashboard',
+    component: Dashboard
+  },
   {
     path: '/overview',
     component: OverviewPageContainer

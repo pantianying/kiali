@@ -174,7 +174,8 @@ const conf = {
       workloadMetrics: (namespace: string, workload: string) =>
         `api/namespaces/${namespace}/workloads/${workload}/metrics`,
       workloadDashboard: (namespace: string, workload: string) =>
-        `api/namespaces/${namespace}/workloads/${workload}/dashboard`
+        `api/namespaces/${namespace}/workloads/${workload}/dashboard`,
+      clusterList: 'api/clusterList',
     }
   },
   /** Graph configurations */
