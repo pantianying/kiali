@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -99,6 +101,14 @@ func NewRouter() *mux.Router {
 		serveIndexFile(w)
 	})
 
+	appRouter.PathPrefix("/hub").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		doProxy("hub", "https://kiali-istio-system.apps.hub.l2s4.p1.dian-sit.com/", w, r)
+	})
+
+	appRouter.PathPrefix("/prod").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		doProxy("prod", "https://kiali-istio-system.apps.prod.dian-int.com/", w, r)
+	})
+
 	if authController := authentication.GetAuthController(); authController != nil {
 		if ac, ok := authController.(*authentication.OpenIdAuthController); ok {
 			authCallback := ac.GetAuthCallbackHandler(http.HandlerFunc(fileServerHandler))
@@ -109,6 +119,25 @@ func NewRouter() *mux.Router {
 	rootRouter.PathPrefix(webRootWithSlash).HandlerFunc(fileServerHandler)
 
 	return rootRouter
+}
+
+func doProxy(cluster string, target string, w http.ResponseWriter, r *http.Request) {
+	u, err := url.Parse(target)
+	if err != nil {
+		log.Errorf("proxy url %v", err)
+		return
+	}
+	proxy := httputil.ReverseProxy{
+		Director: func(request *http.Request) {
+			request.URL.Path = strings.Replace(request.URL.Path, cluster+"/", "", 1)
+			request.URL.Scheme = u.Scheme
+			request.URL.Host = u.Host
+			request.Host = u.Host
+			fmt.Printf("proxy %+v %+v\n", request.URL, request.Header)
+		},
+	}
+
+	proxy.ServeHTTP(w, r)
 }
 
 // statusResponseWriter contains a ResponseWriter and a StatusCode to read in the metrics middleware

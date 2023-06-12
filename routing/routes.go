@@ -1438,6 +1438,13 @@ func NewRoutes() (r *Routes) {
 			handlers.IstiodResourceThresholds,
 			true,
 		},
+		{
+			"additionalMetrics",
+			"GET",
+			"/api/namespaces/{namespace}/additional/metric",
+			handlers.AdditionalMetricHandler,
+			false,
+		},
 	}
 
 	return
