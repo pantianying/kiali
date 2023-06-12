@@ -29,9 +29,9 @@ const Dashboard = () => {
     })
   }, [])
 
-  const handleItemClick = (env)=>{
-    console.log('env',env)
-    history.push(`/${env}/console/overview`)
+  const handleItemClick = (env) => {
+    sessionStorage.setItem('mesh-env', env)
+    history.push('/console/overview')
   }
 
   return (
@@ -42,7 +42,7 @@ const Dashboard = () => {
             key={name}
             span={6}
             style={{ marginRight: 10, cursor: 'pointer' }}
-            onClick={()=>handleItemClick(name)}
+            onClick={() => handleItemClick(name)}
           >
             <Card>
               <CardTitle style={{ fontSize: 16 }}>{name}集群</CardTitle>

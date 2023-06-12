@@ -75,14 +75,18 @@ const basicAuth = (username: UserName, password: Password) => {
   return { username: username, password: password };
 };
 
-const newRequest = <P>(method: HTTP_VERBS, url: string, queryParams: any, data: any) =>
-  axios.request<P>({
+const newRequest = <P>(method: HTTP_VERBS, url: string, queryParams: any, data: any, options?: any) => {
+  const { addEnv = true } = options || {}
+  const env = sessionStorage.getItem('mesh-env')
+
+  return axios.request<P>({
     method: method,
-    url: url.startsWith('/') ? url : '/' + url,
+    url: `${addEnv && env ? '/' + env : ''}/${url}`,
     data: data,
     headers: getHeadersWithMethod(method),
     params: queryParams
   });
+};
 
 interface LoginRequest {
   username: UserName;
@@ -651,5 +655,5 @@ export const getCrippledFeatures = (): Promise<Response<KialiCrippledFeatures>> 
 };
 
 export const getClusterList = (): Promise<Response<KialiCrippledFeatures>> => {
-  return newRequest<KialiCrippledFeatures>(HTTP_VERBS.GET, urls.clusterList, {}, {});
-};
+  return newRequest<KialiCrippledFeatures>(HTTP_VERBS.GET, urls.clusterList, {}, {}, { addEnv: false })
+}
