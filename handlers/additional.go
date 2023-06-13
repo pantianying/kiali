@@ -65,3 +65,35 @@ func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 	response.AdditionalMetric = append(response.AdditionalMetric, proxySync)
 	RespondWithJSON(w, http.StatusOK, response)
 }
+
+type clusterResponse struct {
+	Name      string `json:"name"`
+	UriPrefix string `json:"uriPrefix"`
+	Status    struct {
+		Flag  string `json:"flag"`
+		Value string `json:"value"`
+		Tips  string `json:"tips"`
+	} `json:"status"`
+}
+
+func ClusterList(w http.ResponseWriter, r *http.Request) {
+	var response []clusterResponse
+	prod := clusterResponse{
+		Name:      "prod",
+		UriPrefix: "prod",
+	}
+	prod.Status.Flag = "ok"
+	prod.Status.Value = "健康"
+	prod.Status.Tips = "业务生产集群"
+
+	hub := clusterResponse{
+		Name:      "hub",
+		UriPrefix: "hub",
+	}
+	hub.Status.Flag = "ok"
+	hub.Status.Value = "健康"
+	hub.Status.Tips = "hub集群，dna、监控所在集群"
+
+	response = append(response, prod, hub)
+	RespondWithJSON(w, http.StatusOK, response)
+}

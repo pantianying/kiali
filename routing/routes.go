@@ -1445,6 +1445,13 @@ func NewRoutes() (r *Routes) {
 			handlers.AdditionalMetricHandler,
 			false,
 		},
+		{
+			"clusterList",
+			"GET",
+			"/api/clusterList",
+			handlers.ClusterList,
+			false,
+		},
 	}
 
 	return
