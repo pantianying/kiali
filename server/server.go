@@ -3,12 +3,12 @@ package server
 import (
 	"crypto/tls"
 	"fmt"
+	"github.com/rs/cors"
 	"net/http"
 	"time"
 
 	"github.com/NYTimes/gziphandler"
 	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/gorilla/mux/otelmux"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 
@@ -124,7 +124,16 @@ func (s *Server) Stop() {
 }
 
 func corsAllowed(next http.Handler) http.Handler {
-	return cors.AllowAll().Handler(next)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// 防止重复处理
+		if r.Header.Get("corsDeal") == "done" {
+			next.ServeHTTP(w, r)
+		} else {
+			cors.AllowAll().HandlerFunc(w, r)
+			r.Header.Set("corsDeal", "done")
+			next.ServeHTTP(w, r)
+		}
+	})
 }
 
 func configureGzipHandler(handler http.Handler) http.Handler {
