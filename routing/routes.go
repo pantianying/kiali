@@ -1439,18 +1439,18 @@ func NewRoutes() (r *Routes) {
 			true,
 		},
 		{
-			"additionalMetrics",
+			"AdditionalMetricHandler",
 			"GET",
 			"/api/namespaces/{namespace}/additional/metric",
 			handlers.AdditionalMetricHandler,
-			false,
+			true,
 		},
 		{
-			"clusterList",
+			"ClusterList",
 			"GET",
 			"/api/clusterList",
 			handlers.ClusterList,
-			false,
+			true,
 		},
 	}
 

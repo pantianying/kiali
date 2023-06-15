@@ -85,6 +85,5 @@ func getBusiness(r *http.Request) (*business.Layer, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return business.Get(authInfo)
 }
