@@ -175,6 +175,8 @@ const conf = {
         `api/namespaces/${namespace}/workloads/${workload}/metrics`,
       workloadDashboard: (namespace: string, workload: string) =>
         `api/namespaces/${namespace}/workloads/${workload}/dashboard`,
+      namespaceMetric: (namespace: string, isControlPlaneNamespace: boolean) =>
+        `api/namespaces/${namespace}/additional/metric?isControlPlaneNamespace=${isControlPlaneNamespace}`,
       clusterList: 'api/clusterList',
     }
   },

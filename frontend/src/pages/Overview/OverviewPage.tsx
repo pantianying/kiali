@@ -67,6 +67,7 @@ import ControlPlaneBadge from './ControlPlaneBadge';
 import OverviewStatusContainer from './OverviewStatus';
 import ControlPlaneNamespaceStatus from './ControlPlaneNamespaceStatus';
 import { IstiodResourceThresholds } from 'types/IstioStatus';
+import { createIcon } from '../../components/Health/Helper'
 
 const gridStyleCompact = style({
   backgroundColor: '#f5f5f5',
@@ -152,6 +153,12 @@ type ReduxProps = {
 
 type OverviewProps = ReduxProps & {};
 
+const statusIconMap = {
+  ok: HEALTHY,
+  warn: DEGRADED,
+  error: FAILURE
+}
+
 export class OverviewPage extends React.Component<OverviewProps, State> {
   private sFOverviewToolbar: React.RefObject<StatefulFilters> = React.createRef();
   private promises = new PromisesRegistry();
@@ -212,7 +219,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
     this.promises.cancelAll();
     this.promises
       .register('namespaces', API.getNamespaces())
-      .then(namespacesResponse => {
+      .then(async namespacesResponse => {
         const nameFilters = FilterSelected.getSelected().filters.filter(
           f => f.category === Filters.nameFilter.category
         );
@@ -238,6 +245,16 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
         const type = OverviewToolbar.currentOverviewType();
         const direction = OverviewToolbar.currentDirectionType();
         const displayMode = this.getStartDisplayMode(allNamespaces.length > 16);
+
+        for (let i = 0; i < allNamespaces.length; i++) {
+          const namespace: any = allNamespaces[i]
+          try {
+            const { data } = await API.getNamespaceMetric(namespace.name, namespace.name === serverConfig.istioNamespace)
+            namespace.namespaceMetricInfo = data
+          } catch (error) {
+
+          }
+        }
 
         // Set state before actually fetching health
         this.setState(
@@ -375,8 +392,8 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
 
   // fetchControlPlaneMetrics() {
   //   const duration = FilterHelper.currentDuration();
-  //   const rateParams = computePrometheusRateParams(duration, 10);    
-  //   const options: MetricsQuery = {      
+  //   const rateParams = computePrometheusRateParams(duration, 10);
+  //   const options: MetricsQuery = {
   //     duration: duration,
   //     step: rateParams.step,
   //     rateInterval: rateParams.rateInterval,
@@ -384,7 +401,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
 
   //   API.getControlPlaneMetrics(options)
   //   .then(response => {
-  //     this.setState({controlPlaneMetrics: response.data});        
+  //     this.setState({controlPlaneMetrics: response.data});
   //   })
   //   .catch(error => {
   //     AlertUtils.addError('Error fetching control plane metrics.', error, 'default', MessageType.ERROR);
@@ -842,8 +859,44 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
               />
             ) : (
               <Grid>
-                {filteredNamespaces.map((ns, i) => {
-                  const isLongNs = ns.name.length > NS_LONG;
+                {filteredNamespaces.map((ns: any, i) => {
+                  const isLongNs = ns.name.length > NS_LONG
+                  const renderNamespaceMetricInfo = () => {
+                    if (!ns.namespaceMetricInfo?.additionalMetric) return null
+                    return ns.namespaceMetricInfo.additionalMetric.map(({ name, status }) => {
+                      return (
+                        <div key={name} style={{ display: 'flex', alignItems: 'center' }}>
+                          <span style={{ width: 125, textAlign: 'left', whiteSpace: 'nowrap' }}>{name}</span>
+                          <span>
+                            {
+                              status?.map(({ flag, value, tips, link }, index) => {
+                                return (
+                                  <Tooltip
+                                    position={TooltipPosition.auto}
+                                    content={tips}>
+                                    <span key={index} style={{ marginRight: 5 }}>
+                                      <a
+                                        href={link}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(event)=>{
+                                          if(!link)event.preventDefault()
+                                        }}
+                                      >
+                                        {createIcon(statusIconMap[flag])}
+                                        <span style={{ marginLeft: 2 }}>{value}</span>
+                                      </a>
+                                    </span>
+                                  </Tooltip>
+                                )
+                              })
+                            }
+                          </span>
+                        </div>
+                      )
+                    })
+                  }
+
                   return (
                     <GridItem sm={(ns.name === serverConfig.istioNamespace && this.state.displayMode === OverviewDisplayMode.EXPAND) ? lg : sm}
                       md={(ns.name === serverConfig.istioNamespace && this.state.displayMode === OverviewDisplayMode.EXPAND) ? lg : md}
@@ -887,6 +940,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
                                 </div>
                                 { ns.status && <NamespaceStatuses key={ns.name} name={ns.name} status={ns.status} type={this.state.type} />}
                                 { this.state.displayMode === OverviewDisplayMode.EXPAND && <ControlPlaneNamespaceStatus outboundTrafficPolicy={this.state.outboundPolicyMode} namespace={ns}></ControlPlaneNamespaceStatus>}
+                                {renderNamespaceMetricInfo()}
                               </GridItem>
                               {ns.name === serverConfig.istioNamespace &&
                                 <GridItem md={9}>
@@ -909,6 +963,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
                                 {this.renderIstioConfigStatus(ns)}
                               </div>
                               {this.renderStatus(ns)}
+                              {renderNamespaceMetricInfo()}
                               {this.state.displayMode === OverviewDisplayMode.EXPAND && this.renderCharts(ns)}
                             </div>
                           }
