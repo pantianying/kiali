@@ -31,7 +31,8 @@ const Dashboard = () => {
 
   const handleItemClick = (env) => {
     sessionStorage.setItem('mesh-env', env)
-    history.push('/console/overview')
+    const urlInfo = new URL(location.href)
+    history.push(`/overview${urlInfo.search}`)
   }
 
   return (
