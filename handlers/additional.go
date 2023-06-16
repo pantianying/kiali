@@ -44,12 +44,12 @@ func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 	syncedProxiesNum := 0
 	unSyncedProxiesNum := 0
 	for _, workload := range list.Workloads {
-		fmt.Printf("%s: %+v\n", workload.Name, workload.Health.WorkloadStatus)
 		if workload.Health.WorkloadStatus == nil {
 			continue
 		}
 		if workload.IstioSidecar {
-			if workload.Health.WorkloadStatus.SyncedProxies != 0 {
+			fmt.Printf("%s %v: %+v\n", workload.Name, workload.IstioSidecar, workload.Health.WorkloadStatus)
+			if workload.Health.WorkloadStatus.SyncedProxies > 0 {
 				syncedProxiesNum = syncedProxiesNum + int(workload.Health.WorkloadStatus.SyncedProxies)
 			}
 			if workload.Health.WorkloadStatus.SyncedProxies != workload.Health.WorkloadStatus.DesiredReplicas {
@@ -60,17 +60,18 @@ func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 	var syncedProxiesStatus StatusStu
 	syncedProxiesStatus.Flag = "ok"
 	syncedProxiesStatus.Value = fmt.Sprintf("%d", syncedProxiesNum)
-	syncedProxiesStatus.Tips = "synced"
+	syncedProxiesStatus.Tips = fmt.Sprintf("%v proxy synced", syncedProxiesNum)
 	syncedProxiesStatus.Link = "https://www.kiali.io/documentation/latest/observability/health/#proxy-sync"
 	proxySync.Status = append(proxySync.Status, syncedProxiesStatus)
-	var unSyncedProxiesStatus StatusStu
-	unSyncedProxiesStatus.Flag = "error"
-	unSyncedProxiesStatus.Value = fmt.Sprintf("%d", syncedProxiesNum)
-	unSyncedProxiesStatus.Tips = "un synced"
-	unSyncedProxiesStatus.Link = "https://www.kiali.io/documentation/latest/observability/health/#proxy-sync"
-	proxySync.Status = append(proxySync.Status, unSyncedProxiesStatus)
+	if unSyncedProxiesNum != 0 {
+		var unSyncedProxiesStatus StatusStu
+		unSyncedProxiesStatus.Flag = "error"
+		unSyncedProxiesStatus.Value = fmt.Sprintf("%d", unSyncedProxiesNum)
+		unSyncedProxiesStatus.Tips = fmt.Sprintf("%v proxy unsynced", unSyncedProxiesNum)
+		unSyncedProxiesStatus.Link = "https://www.kiali.io/documentation/latest/observability/health/#proxy-sync"
+		proxySync.Status = append(proxySync.Status, unSyncedProxiesStatus)
+	}
 	response.AdditionalMetric = append(response.AdditionalMetric, proxySync)
-
 	// metricsService, namespaceInfo := createMetricsServiceForNamespace(w, r, defaultPromClientSupplier, namespace)
 	RespondWithJSON(w, http.StatusOK, response)
 }
