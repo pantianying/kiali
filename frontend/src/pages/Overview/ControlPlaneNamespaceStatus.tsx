@@ -51,6 +51,20 @@ class ControlPlaneNamespaceStatus extends React.Component<Props> {
                         </Tooltip>
                     </div>
                 }
+              {!showProxyPushTime &&
+                <div>
+                  <div style={{ display: 'inline-block', width: '125px', whiteSpace: 'nowrap' }}>Proxy Push Time</div>
+                  <Tooltip
+                    position={TooltipPosition.right}
+                    content={<div style={{ textAlign: 'left' }}>This value represents the delay in seconds between config change and a proxy receiving all required configuration.</div>}
+                  >
+                    <Label isCompact color="blue">
+                       该时间段内无 push<KialiIcon.Info className={infoStyle} />
+                    </Label>
+
+                  </Tooltip>
+                </div>
+              }
             </div>
         );
     };
