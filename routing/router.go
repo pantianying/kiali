@@ -133,7 +133,7 @@ func doProxy(cluster string, target string, w http.ResponseWriter, r *http.Reque
 			request.URL.Scheme = u.Scheme
 			request.URL.Host = u.Host
 			request.Host = u.Host
-			fmt.Printf("proxy %+v %+v\n", request.URL, request.Header)
+			//fmt.Printf("proxy %+v %+v\n", request.URL, request.Header)
 		},
 	}
 

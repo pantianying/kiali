@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset/versioned"
 	"net"
 	"os"
 	"strings"
@@ -60,11 +61,16 @@ type K8SClient struct {
 	// isGatewayAPI private variable will check if K8s Gateway API CRD exists on cluster or not
 	isGatewayAPI *bool
 	gatewayapi   gatewayapiclient.Interface
+	metricApi    *metricsclientset.Clientset
 }
 
 // GetK8sApi returns the clientset referencing all K8s rest clients
 func (client *K8SClient) GetK8sApi() *kube.Clientset {
 	return client.k8s
+}
+
+func (client *K8SClient) GetMetricApi() *metricsclientset.Clientset {
+	return client.metricApi
 }
 
 // GetToken returns the BearerToken used from the config
@@ -167,6 +173,10 @@ func NewClientFromConfig(config *rest.Config) (*K8SClient, error) {
 		return nil, err
 	}
 
+	client.metricApi, err = metricsclientset.NewForConfig(config)
+	if err != nil {
+		log.Errorf("failed to get metrics client: %v", err)
+	}
 	client.ctx = context.Background()
 	return &client, nil
 }

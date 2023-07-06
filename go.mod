@@ -32,6 +32,7 @@ require (
 	k8s.io/api v0.24.2
 	k8s.io/apimachinery v0.24.2
 	k8s.io/client-go v0.24.2
+	k8s.io/metrics v0.24.2
 	sigs.k8s.io/gateway-api v0.5.1-0.20220830123301-a7a465ababc8
 )
 

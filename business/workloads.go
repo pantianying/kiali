@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kiali/kiali/kubernetes/cache"
 	"io"
 	"net/http"
 	"regexp"
@@ -374,6 +375,11 @@ func (in *WorkloadService) UpdateWorkload(ctx context.Context, namespace string,
 
 	// After the update we fetch the whole workload
 	return in.GetWorkload(ctx, WorkloadCriteria{Namespace: namespace, WorkloadName: workloadName, WorkloadType: workloadType, IncludeServices: includeServices})
+}
+
+func GetkialiCache() cache.KialiCache {
+	kialiCache.GetClient()
+	return kialiCache
 }
 
 func (in *WorkloadService) GetPods(ctx context.Context, namespace string, labelSelector string) (models.Pods, error) {
