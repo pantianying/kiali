@@ -109,6 +109,10 @@ func NewRouter() *mux.Router {
 		doProxy("prod", "https://kiali-istio-system.apps.prod.dian-int.com/", w, r)
 	})
 
+	appRouter.PathPrefix("/pre").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		doProxy("pre", "https://kiali-istio-preview.apps.prod.dian-int.com/", w, r)
+	})
+
 	if authController := authentication.GetAuthController(); authController != nil {
 		if ac, ok := authController.(*authentication.OpenIdAuthController); ok {
 			authCallback := ac.GetAuthCallbackHandler(http.HandlerFunc(fileServerHandler))

@@ -72,8 +72,8 @@ func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func getProxySyncMetric(ctx context.Context, namespace string, layer *business.Layer) *AdditionalMetric {
-	criteria := business.WorkloadCriteria{Namespace: namespace, IncludeIstioResources: true, IncludeHealth: true}
-	list, err := layer.Workload.GetWorkloadList(ctx, criteria)
+	// criteria := business.WorkloadCriteria{Namespace: namespace, IncludeIstioResources: true, IncludeHealth: true}
+	podList, err := layer.Workload.GetPods(ctx, namespace, "")
 	if err != nil {
 		log.Errorf("failed to get workload list: %v", err)
 		return nil
@@ -83,19 +83,23 @@ func getProxySyncMetric(ctx context.Context, namespace string, layer *business.L
 
 	syncedProxiesNum := 0
 	unSyncedProxiesNum := 0
-	for _, workload := range list.Workloads {
-		if workload.Health.WorkloadStatus == nil {
+
+	for _, p := range podList {
+		if p.ProxyStatus == nil {
 			continue
 		}
-		if workload.IstioSidecar {
-			fmt.Printf("%s %v: %+v\n", workload.Name, workload.IstioSidecar, workload.Health.WorkloadStatus)
-			if workload.Health.WorkloadStatus.SyncedProxies > 0 {
-				syncedProxiesNum = syncedProxiesNum + int(workload.Health.WorkloadStatus.SyncedProxies)
-			}
-			if workload.Health.WorkloadStatus.SyncedProxies >= 0 && workload.Health.WorkloadStatus.SyncedProxies != workload.Health.WorkloadStatus.DesiredReplicas {
-				log.Warningf("workload %s has %d/%d proxies synced", workload.Name, workload.Health.WorkloadStatus.SyncedProxies, workload.Health.WorkloadStatus.DesiredReplicas)
-				unSyncedProxiesNum = unSyncedProxiesNum + int(workload.Health.WorkloadStatus.DesiredReplicas-workload.Health.WorkloadStatus.SyncedProxies)
-			}
+		if !p.HasIstioSidecar() {
+			continue
+		}
+		ps := layer.ProxyStatus.GetPodProxyStatus(namespace, p.Name)
+		if ps == nil {
+			log.Info("proxy status is nil", "namespace", namespace, "pod", p.Name)
+			continue
+		}
+		if ps.IsSynced() {
+			syncedProxiesNum++
+		} else {
+			unSyncedProxiesNum++
 		}
 	}
 	var syncedProxiesStatus StatusStu
@@ -178,7 +182,15 @@ func ClusterList(w http.ResponseWriter, r *http.Request) {
 	hub.Status.Value = "健康"
 	hub.Status.Tips = "hub集群，dna、监控所在集群"
 
-	response = append(response, prod, hub)
+	pre := clusterResponse{
+		Name:      "pre",
+		UriPrefix: "pre",
+	}
+	pre.Status.Flag = "ok"
+	pre.Status.Value = "健康"
+	pre.Status.Tips = "pre集群，预发集群"
+
+	response = append(response, prod, hub, pre)
 	RespondWithJSON(w, http.StatusOK, response)
 }
 
