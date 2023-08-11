@@ -35,7 +35,7 @@ class IstioConfigHelp extends React.Component<IstioConfigHelpProps> {
         )}
         {!helpMessage && (
           <StackItem>
-            <p>Help information will appear when editing on important fields for this configuration.</p>
+            <p>帮助信息会在你编辑重要字段的时候显示</p>
           </StackItem>
         )}
       </Stack>

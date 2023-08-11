@@ -325,6 +325,20 @@ func NewRoutes() (r *Routes) {
 			handlers.IstioConfigUpdate,
 			true,
 		},
+		{
+			"IstioConfigCreateOrUpdatePreview",
+			"PATCH",
+			"/api/namespaces/{namespace}/istio/{object_type}/{object}/preview",
+			handlers.IstioConfigCreateOrUpdatePreview,
+			true,
+		},
+		{
+			"IstioConfigCreateOrUpdatePreview",
+			"PATCH",
+			"/api/namespaces/{namespace}/istio/{object_type}/{object}/preview",
+			handlers.IstioConfigQueryPreview,
+			true,
+		},
 		// swagger:route POST /namespaces/{namespace}/istio/{object_type} config istioConfigCreate
 		// ---
 		// Endpoint to create an Istio object by using an Istio Config item

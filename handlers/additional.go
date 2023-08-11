@@ -7,32 +7,26 @@ import (
 	"github.com/kiali/kiali/business"
 	"github.com/kiali/kiali/kubernetes"
 	"github.com/kiali/kiali/log"
+	"github.com/kiali/kiali/models"
+	cache "github.com/patrickmn/go-cache"
+	"io"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"net/http"
+	"time"
 )
 
-//var (
-//	metricApi *metricsclientset.Clientset
-//	k8sApi    *kube.Clientset
-//)
-//
-//func init() {
-//	cfg, err := kubernetes.ConfigClient()
-//	if err != nil {
-//		log.Errorf("failed to get k8s config: %v", err)
-//	}
-//	metricClient, err := metricsclientset.NewForConfig(cfg)
-//	if err != nil {
-//		log.Errorf("failed to get metrics client: %v", err)
-//	}
-//	metricApi = metricClient
-//
-//	k8sClient, err := kube.NewForConfig(cfg)
-//	if err != nil {
-//		log.Errorf("failed to get k8s client: %v", err)
-//	}
-//	k8sApi = k8sClient
-//}
+// 缓存 加快结果返回，减少对集群的压力
+var metricCache = cache.New(3*time.Minute, 5*time.Minute)
+
+type clusterResponse struct {
+	Name      string `json:"name"`
+	UriPrefix string `json:"uriPrefix"`
+	Status    struct {
+		Flag  string `json:"flag"`
+		Value string `json:"value"`
+		Tips  string `json:"tips"`
+	} `json:"status"`
+}
 
 type AdditionalMetricResponse struct {
 	AdditionalMetric []AdditionalMetric `json:"additionalMetric"`
@@ -48,6 +42,13 @@ type StatusStu struct {
 	Value string `json:"value,omitempty"`
 	Tips  string `json:"tips,omitempty"`
 	Link  string `json:"link,omitempty"`
+}
+
+type IstioConfigDetailsPreview struct {
+	Namespace   models.Namespace `json:"namespace"`
+	ObjectType  string           `json:"objectType"`
+	Object      string           `json:"object"`
+	PreviewData string           `json:"previewData"`
 }
 
 func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,6 +70,61 @@ func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	RespondWithJSON(w, http.StatusOK, response)
+}
+
+func IstioConfigQueryPreview(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	namespace := params["namespace"]
+	objectType := params["object_type"]
+	object := params["object"]
+
+	if !business.GetIstioAPI(objectType) {
+		RespondWithError(w, http.StatusBadRequest, "Object type not managed: "+objectType)
+		return
+	}
+
+	istioConfigDetailPreview := IstioConfigDetailsPreview{}
+	istioConfigDetailPreview.Namespace = models.Namespace{Name: namespace}
+	istioConfigDetailPreview.ObjectType = objectType
+	istioConfigDetailPreview.Object = object
+	istioConfigDetailPreview.PreviewData = string(ReadReleasingConfigFile(object, namespace, objectType))
+	audit(r, "QUERY PREVIEW on Namespace: "+namespace+" Type: "+objectType+" Name: "+object)
+	RespondWithJSON(w, http.StatusOK, istioConfigDetailPreview)
+}
+
+func IstioConfigCreateOrUpdatePreview(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	namespace := params["namespace"]
+	objectType := params["object_type"]
+	object := params["object"]
+
+	if !business.GetIstioAPI(objectType) {
+		RespondWithError(w, http.StatusBadRequest, "Object type not managed: "+objectType)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Update request with bad update patch: "+err.Error())
+	}
+	if err != nil {
+		handleErrorResponse(w, err)
+		return
+	}
+
+	istioConfigDetailPreview := IstioConfigDetailsPreview{}
+	istioConfigDetailPreview.Namespace = models.Namespace{Name: namespace}
+	istioConfigDetailPreview.ObjectType = objectType
+	istioConfigDetailPreview.Object = object
+	istioConfigDetailPreview.PreviewData = string(body)
+	err = WriteFile(object, namespace, objectType, body)
+	if err != nil {
+		handleErrorResponse(w, err)
+		return
+	}
+
+	audit(r, "UPDATE PREVIEW on Namespace: "+namespace+" Type: "+objectType+" Name: "+object+" Patch: "+string(body))
+	RespondWithJSON(w, http.StatusOK, istioConfigDetailPreview)
 }
 
 func getProxySyncMetric(ctx context.Context, namespace string, layer *business.Layer) *AdditionalMetric {
@@ -120,7 +176,15 @@ func getProxySyncMetric(ctx context.Context, namespace string, layer *business.L
 }
 
 func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetric {
+
 	var proxyMemory = &AdditionalMetric{}
+	cacheKey := "proxyMemory-" + namespace
+	v, ok := metricCache.Get(cacheKey)
+	if ok {
+		proxyMemory = v.(*AdditionalMetric)
+		return proxyMemory
+	}
+
 	proxyMemory.Name = "proxy内存情况"
 	var proxyMemoryStatusOk = StatusStu{
 		Flag: "ok",
@@ -138,7 +202,7 @@ func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetr
 		ok1, limit := proxyMemoryLimit(ctx, business.GetkialiCache().GetClient(), p.Namespace, p.Name)
 		ok2, used := proxyMemoryUsed(ctx, business.GetkialiCache().GetClient(), p.Namespace, p.Name)
 		if ok2 && ok1 {
-			if (float64(used) / float64(limit)) > 0.9 {
+			if (float64(used) / float64(limit)) > 0.85 {
 				proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("podname: %v used/limit:%v/%v \n", p.Name, used, limit)
 				warnN++
 			} else {
@@ -149,19 +213,11 @@ func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetr
 	proxyMemoryStatusOk.Value = fmt.Sprintf("%v", okN)
 	proxyMemoryStatusWarn.Value = fmt.Sprintf("%v", warnN)
 	proxyMemoryStatusOk.Tips = fmt.Sprintf("%v个pod sidecar内存在合理范围内", okN)
-	proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("共%v个pod sidecar内存使用超过90%", warnN)
+	proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("共%v个pod sidecar内存使用超过85%", warnN)
 	proxyMemory.Status = append(proxyMemory.Status, proxyMemoryStatusOk, proxyMemoryStatusWarn)
-	return proxyMemory
-}
 
-type clusterResponse struct {
-	Name      string `json:"name"`
-	UriPrefix string `json:"uriPrefix"`
-	Status    struct {
-		Flag  string `json:"flag"`
-		Value string `json:"value"`
-		Tips  string `json:"tips"`
-	} `json:"status"`
+	metricCache.Set(cacheKey, *proxyMemory, cache.DefaultExpiration)
+	return proxyMemory
 }
 
 func ClusterList(w http.ResponseWriter, r *http.Request) {

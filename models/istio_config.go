@@ -132,7 +132,7 @@ var IstioConfigHelpMessages = map[string][]IstioConfigHelp{
 	"virtualservices": {
 		{ObjectField: "spec.hosts", Message: "The destination hosts to which traffic is being sent. Could be a DNS name with wildcard prefix or an IP address. Depending on the platform, short-names can also be used instead of a FQDN (i.e. has no dots in the name)."},
 		{ObjectField: "spec.gateways", Message: "The names of gateways and sidecars that should apply these routes. Gateways in other namespaces may be referred to by <gateway namespace>/<gateway name>; specifying a gateway with no namespace qualifier is the same as specifying the VirtualService’s namespace. To apply the rules to both gateways and sidecars, specify mesh as one of the gateway names."},
-		{ObjectField: "spec.http", Message: "An ordered list of route rules for HTTP traffic."},
+		{ObjectField: "spec.http", Message: "http级别的在此配置"},
 		{ObjectField: "spec.exportTo", Message: "A list of namespaces to which this virtual service is exported. Exporting a virtual service allows it to be used by sidecars and gateways defined in other namespaces."},
 		{ObjectField: "spec.http.match", Message: "Match conditions to be satisfied for the rule to be activated."},
 		{ObjectField: "spec.http.route", Message: "A HTTP rule can either redirect or forward (default) traffic. The forwarding target can be one of several versions of a service. Weights associated with the service version determine the proportion of traffic it receives."},

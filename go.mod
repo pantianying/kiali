@@ -10,6 +10,7 @@ require (
 	github.com/mitchellh/mapstructure v1.4.3
 	github.com/nitishm/engarde v0.1.1
 	github.com/openshift/api v0.0.0-20200221181648-8ce0047d664f
+	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.11.1
 	github.com/prometheus/common v0.26.0
 	github.com/rs/cors v1.9.0
