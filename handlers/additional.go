@@ -177,12 +177,12 @@ func getProxySyncMetric(ctx context.Context, namespace string, layer *business.L
 
 func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetric {
 
-	var proxyMemory = &AdditionalMetric{}
+	var proxyMemory = AdditionalMetric{}
 	cacheKey := "proxyMemory-" + namespace
 	v, ok := metricCache.Get(cacheKey)
 	if ok {
-		proxyMemory = v.(*AdditionalMetric)
-		return proxyMemory
+		proxyMemory = v.(AdditionalMetric)
+		return &proxyMemory
 	}
 
 	proxyMemory.Name = "proxy内存情况"
@@ -203,7 +203,7 @@ func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetr
 		ok2, used := proxyMemoryUsed(ctx, business.GetkialiCache().GetClient(), p.Namespace, p.Name)
 		if ok2 && ok1 {
 			if (float64(used) / float64(limit)) > 0.85 {
-				proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("podname: %v used/limit:%v/%v \n", p.Name, used, limit)
+				proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("podname: %v used/limit:%v/%v \n", p.Name, used/1024/1024, limit/1024/1024)
 				warnN++
 			} else {
 				okN++
@@ -216,8 +216,8 @@ func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetr
 	proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("共%v个pod sidecar内存使用超过85%", warnN)
 	proxyMemory.Status = append(proxyMemory.Status, proxyMemoryStatusOk, proxyMemoryStatusWarn)
 
-	metricCache.Set(cacheKey, *proxyMemory, cache.DefaultExpiration)
-	return proxyMemory
+	metricCache.Set(cacheKey, proxyMemory, cache.DefaultExpiration)
+	return &proxyMemory
 }
 
 func ClusterList(w http.ResponseWriter, r *http.Request) {
@@ -276,4 +276,16 @@ func proxyMemoryLimit(ctx context.Context, c *kubernetes.K8SClient, namespace, p
 		}
 	}
 	return false, 0
+}
+
+type UserInfo struct {
+	Username string `json:"username"`
+	Mail     string `json:"mail"`
+	// AccessToken string `json:"accessToken"`
+	Identity     string `json:"identity"`
+	IdentityName string `json:"identityName"`
+}
+
+func UserInfoByToken(token string) UserInfo {
+	http.Post("https://prod-auth-dapp.apps.hub.l2s4.p1.dian-sit.com/open-api/v1/userinfo")
 }
