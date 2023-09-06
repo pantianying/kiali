@@ -42,7 +42,7 @@ const Dashboard = () => {
           <GridItem
             key={name}
             span={6}
-            style={{ marginRight: 10, cursor: 'pointer' }}
+            style={{ margin: 10, cursor: 'pointer' }}
             onClick={() => handleItemClick(name)}
           >
             <Card>

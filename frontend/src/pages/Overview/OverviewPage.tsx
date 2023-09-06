@@ -15,6 +15,7 @@ import {
   Tooltip,
   TooltipPosition
 } from '@patternfly/react-core';
+import { Spin } from 'antd';
 import { style } from 'typestyle';
 import { AxiosError } from 'axios';
 import { FilterSelected, StatefulFilters } from '../../components/Filters/StatefulFilters';
@@ -131,6 +132,7 @@ export enum Show {
 
 type State = {
   namespaces: NamespaceInfo[];
+  loading: boolean;
   type: OverviewType;
   direction: DirectionType;
   displayMode: OverviewDisplayMode;
@@ -170,6 +172,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
     const display = HistoryManager.getParam(URLParam.DISPLAY_MODE);
     this.state = {
       namespaces: [],
+      loading: false,
       type: OverviewToolbar.currentOverviewType(),
       direction: OverviewToolbar.currentDirectionType(),
       displayMode: display ? Number(display) : OverviewDisplayMode.EXPAND,
@@ -216,6 +219,9 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
   };
 
   load = () => {
+    this.setState({
+      loading: true
+    });
     this.promises.cancelAll();
     this.promises
       .register('namespaces', API.getNamespaces())
@@ -260,6 +266,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
         this.setState(
           prevState => {
             return {
+              loading: false,
               type: type,
               direction: direction,
               namespaces: Sorts.sortFunc(allNamespaces, sortField, isAscending),
@@ -846,28 +853,29 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
           setDisplayMode={this.setDisplayMode}
           statefulFilterRef={this.sFOverviewToolbar}
         />
-        {filteredNamespaces.length > 0 ? (
-          <RenderComponentScroll
-            className={this.state.displayMode === OverviewDisplayMode.LIST ? gridStyleList : gridStyleCompact}
-          >
-            {this.state.displayMode === OverviewDisplayMode.LIST ? (
-              <VirtualList
-                rows={filteredNamespaces}
-                sort={this.sort}
-                statefulProps={this.sFOverviewToolbar}
-                actions={namespaceActions}
-              />
-            ) : (
-              <Grid>
-                {filteredNamespaces.map((ns: any, i) => {
-                  const isLongNs = ns.name.length > NS_LONG
-                  const renderNamespaceMetricInfo = () => {
-                    if (!ns.namespaceMetricInfo?.additionalMetric) return null
-                    return ns.namespaceMetricInfo.additionalMetric.map(({ name, status }) => {
-                      return (
-                        <div key={name} style={{ display: 'flex', alignItems: 'center' }}>
-                          <span style={{ width: 125, textAlign: 'left', whiteSpace: 'nowrap' }}>{name}</span>
-                          <span>
+        <Spin spinning={this.state.loading}>
+          {filteredNamespaces.length > 0 ? (
+            <RenderComponentScroll
+              className={this.state.displayMode === OverviewDisplayMode.LIST ? gridStyleList : gridStyleCompact}
+            >
+              {this.state.displayMode === OverviewDisplayMode.LIST ? (
+                <VirtualList
+                  rows={filteredNamespaces}
+                  sort={this.sort}
+                  statefulProps={this.sFOverviewToolbar}
+                  actions={namespaceActions}
+                />
+              ) : (
+                <Grid>
+                  {filteredNamespaces.map((ns: any, i) => {
+                    const isLongNs = ns.name.length > NS_LONG;
+                    const renderNamespaceMetricInfo = () => {
+                      if (!ns.namespaceMetricInfo?.additionalMetric) return null;
+                      return ns.namespaceMetricInfo.additionalMetric.map(({ name, status }) => {
+                        return (
+                          <div key={name} style={{ display: 'flex', alignItems: 'center' }}>
+                            <span style={{ width: 125, textAlign: 'left', whiteSpace: 'nowrap' }}>{name}</span>
+                            <span>
                             {
                               status?.map(({ flag, value, tips, link }, index) => {
                                 return (
@@ -989,6 +997,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
             </EmptyState>
           </div>
         )}
+        </Spin>
         <OverviewTrafficPolicies
           opTarget={this.state.opTarget}
           isOpen={this.state.showTrafficPoliciesModal}
