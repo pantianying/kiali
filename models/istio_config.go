@@ -1,11 +1,14 @@
 package models
 
 import (
+	"github.com/golang/protobuf/ptypes/duration"
+	networkingv1beta1 "istio.io/api/networking/v1beta1"
 	extentions_v1alpha1 "istio.io/client-go/pkg/apis/extensions/v1alpha1"
 	networking_v1alpha3 "istio.io/client-go/pkg/apis/networking/v1alpha3"
 	networking_v1beta1 "istio.io/client-go/pkg/apis/networking/v1beta1"
 	security_v1beta "istio.io/client-go/pkg/apis/security/v1beta1"
 	"istio.io/client-go/pkg/apis/telemetry/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8s_networking_v1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 )
 
@@ -59,16 +62,52 @@ type IstioConfigDetails struct {
 	K8sGateway   *k8s_networking_v1alpha2.Gateway   `json:"k8sGateway"`
 	K8sHTTPRoute *k8s_networking_v1alpha2.HTTPRoute `json:"k8sHTTPRoute"`
 
-	Permissions           ResourcePermissions `json:"permissions"`
-	IstioValidation       *IstioValidation    `json:"validation"`
-	IstioReferences       *IstioReferences    `json:"references"`
-	IstioConfigHelpFields []IstioConfigHelp   `json:"help"`
+	Permissions           ResourcePermissions   `json:"permissions"`
+	IstioValidation       *IstioValidation      `json:"validation"`
+	IstioReferences       *IstioReferences      `json:"references"`
+	IstioConfigHelpFields []IstioConfigHelp     `json:"help"`
+	IstioConfigHelpDemos  []IstioConfigHelpDemo `json:"demo"`
+}
+
+type IstioConfigHelpDemo struct {
+	DemoName string      `json:"demoName"`
+	Config   interface{} `json:"config"`
+	Desc     string      `json:"desc"`
 }
 
 // IstioConfigHelp represents a help message for a given Istio object type and field
 type IstioConfigHelp struct {
 	ObjectField string `json:"objectField"`
 	Message     string `json:"message"`
+}
+
+var IstioConfigHelpDemos = map[string][]IstioConfigHelpDemo{
+	"destinationrules": {
+		{
+			DemoName: "限流配置",
+			Desc:     "以上配置 限制客户端调用avatar时，最大连接数也就是最大并发数为：40，当达到最大并发请求时，http请求缓冲队列长度为10，连接空闲释放的判断时间为15s",
+			Config: networking_v1beta1.DestinationRule{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "avatar",
+					Namespace: "dian-pre",
+				},
+				Spec: networkingv1beta1.DestinationRule{
+					Host: "avatar",
+					TrafficPolicy: &networkingv1beta1.TrafficPolicy{
+						ConnectionPool: &networkingv1beta1.ConnectionPoolSettings{
+							Tcp: &networkingv1beta1.ConnectionPoolSettings_TCPSettings{
+								MaxConnections: 40,
+							},
+							Http: &networkingv1beta1.ConnectionPoolSettings_HTTPSettings{
+								Http1MaxPendingRequests: 10,
+								IdleTimeout:             &duration.Duration{Seconds: int64(15)},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 // IstioConfigHelpMessages represents the help messages for a given Istio object type
@@ -176,6 +215,8 @@ type ResourcePermissions struct {
 	Create bool `json:"create"`
 	Update bool `json:"update"`
 	Delete bool `json:"delete"`
+	// 提交审核
+	Preview bool `json:"preview"`
 }
 
 // ResourcesPermissions holds a map of permission flags per resource

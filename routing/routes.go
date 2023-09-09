@@ -334,7 +334,7 @@ func NewRoutes() (r *Routes) {
 		},
 		{
 			"IstioConfigCreateOrUpdatePreview",
-			"PATCH",
+			"GET",
 			"/api/namespaces/{namespace}/istio/{object_type}/{object}/preview",
 			handlers.IstioConfigQueryPreview,
 			true,
@@ -1464,6 +1464,20 @@ func NewRoutes() (r *Routes) {
 			"GET",
 			"/api/clusterList",
 			handlers.ClusterList,
+			true,
+		},
+		{
+			"UserToken",
+			"GET",
+			"/api/userToken",
+			handlers.UserTokenHandler,
+			true,
+		},
+		{
+			"UserInfo",
+			"GET",
+			"/api/userInfo",
+			handlers.UserInfoHandler,
 			true,
 		},
 	}

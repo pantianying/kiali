@@ -160,6 +160,7 @@ func IstioConfigDetails(w http.ResponseWriter, r *http.Request) {
 
 	if includeHelp {
 		istioConfigDetails.IstioConfigHelpFields = models.IstioConfigHelpMessages[objectType]
+		istioConfigDetails.IstioConfigHelpDemos = models.IstioConfigHelpDemos[objectType]
 	}
 
 	if err != nil {
@@ -187,6 +188,15 @@ func IstioConfigDetails(w http.ResponseWriter, r *http.Request) {
 		handleErrorResponse(w, err)
 		return
 	}
+
+	// 新增通过用户信息过滤权限
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		RespondWithError(w, http.StatusBadRequest, "token is empty")
+		return
+	}
+	userInfo, err := getUserInfo(token)
+	mergeUserPermissions(userInfo, object, namespace, &istioConfigDetails.Permissions)
 
 	RespondWithJSON(w, http.StatusOK, istioConfigDetails)
 }

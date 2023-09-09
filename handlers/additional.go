@@ -213,7 +213,7 @@ func getProxyMemoryMetric(ctx context.Context, namespace string) *AdditionalMetr
 	proxyMemoryStatusOk.Value = fmt.Sprintf("%v", okN)
 	proxyMemoryStatusWarn.Value = fmt.Sprintf("%v", warnN)
 	proxyMemoryStatusOk.Tips = fmt.Sprintf("%v个pod sidecar内存在合理范围内", okN)
-	proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("共%v个pod sidecar内存使用超过85%", warnN)
+	proxyMemoryStatusWarn.Tips = proxyMemoryStatusWarn.Tips + fmt.Sprintf("共%v个pod sidecar内存使用超过85%%", warnN)
 	proxyMemory.Status = append(proxyMemory.Status, proxyMemoryStatusOk, proxyMemoryStatusWarn)
 
 	metricCache.Set(cacheKey, proxyMemory, cache.DefaultExpiration)
@@ -278,14 +278,62 @@ func proxyMemoryLimit(ctx context.Context, c *kubernetes.K8SClient, namespace, p
 	return false, 0
 }
 
-type UserInfo struct {
-	Username string `json:"username"`
-	Mail     string `json:"mail"`
-	// AccessToken string `json:"accessToken"`
-	Identity     string `json:"identity"`
-	IdentityName string `json:"identityName"`
+func UserTokenHandler(w http.ResponseWriter, r *http.Request) {
+	code := r.URL.Query().Get("code")
+	if code == "" {
+		RespondWithError(w, http.StatusBadRequest, "code is empty")
+		return
+	}
+	token, err := getUserToken(code)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	RespondWithJSON(w, http.StatusOK, token)
 }
 
-func UserInfoByToken(token string) UserInfo {
-	http.Post("https://prod-auth-dapp.apps.hub.l2s4.p1.dian-sit.com/open-api/v1/userinfo")
+func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		RespondWithError(w, http.StatusBadRequest, "token is empty")
+		return
+	}
+	userInfo, err := getUserInfo(token)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if IsAdminUser(userInfo.Username) {
+		userInfo.Identity = "administrator"
+		userInfo.IdentityName = "管理员"
+	} else {
+		userInfo.Identity = "developer"
+		userInfo.IdentityName = "普通开发者"
+	}
+	RespondWithJSON(w, http.StatusOK, userInfo)
+}
+
+func getPermissionsByUser(user, object, namespace string) (bool, bool, bool, bool) {
+	var canCreate, canPatch, canDelete, canPreview bool
+	if IsAdminUser(user) {
+		canCreate, canPatch, canDelete, canPreview = true, true, true, true
+		return canCreate, canPatch, canDelete, canPreview
+	}
+	if IsDeveloperUser(user) {
+		canCreate, canPatch, canDelete, canPreview = false, false, false, true
+		return canCreate, canPatch, canDelete, canPreview
+	}
+
+	canCreate, canPatch, canDelete, canPreview = false, false, false, false
+	return canCreate, canPatch, canDelete, canPreview
+}
+
+func mergeUserPermissions(user *UserInfo, object, namespace string, permissions *models.ResourcePermissions) {
+	canCreate, canPatch, canDelete, canPreview := getPermissionsByUser(user.Username, object, namespace)
+	permissions.Create = canCreate && permissions.Create
+	permissions.Update = canPatch && permissions.Update
+	permissions.Delete = canDelete && permissions.Delete
+	// 原来并没有preview权限，这里加上
+	permissions.Preview = canPreview
+	return
 }
