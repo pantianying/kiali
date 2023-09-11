@@ -264,7 +264,7 @@ func NewRoutes() (r *Routes) {
 		//     Produces:
 		//     - application/json
 		//
-		//     Schemes: http, https
+		//     Schemes: http, httpsxx
 		//
 		// responses:
 		//      400: badRequestError

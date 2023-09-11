@@ -63,3 +63,8 @@ func RemoveFile(name, namespace, objectType string) error {
 	}
 	return nil
 }
+
+func IsExistFile(name, namespace, objectType string) bool {
+	path := dataDirPrefix + "/" + namespace + "/" + objectType + "/" + name
+	return isExist(path)
+}

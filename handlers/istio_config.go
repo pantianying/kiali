@@ -84,6 +84,12 @@ func IstioConfigList(w http.ResponseWriter, r *http.Request) {
 				if len(parsedTypes) > 0 {
 					istioConfigValidationResults = istioConfigValidationResults.FilterByTypes(parsedTypes)
 				}
+				for k, validation := range istioConfigValidationResults {
+					if IsExistFile(k.Name, k.Namespace, k.ObjectType) {
+						validation.IsHasPreview = true
+						istioConfigValidationResults[k] = validation
+					}
+				}
 				*istioConfigValidations = istioConfigValidationResults
 			}
 		}(namespace, &istioConfigValidations, &err)

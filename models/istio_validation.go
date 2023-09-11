@@ -57,6 +57,9 @@ type IstioValidation struct {
 	// example: false
 	Valid bool `json:"valid"`
 
+	// HasPreview
+	IsHasPreview bool `json:"isHasPreview"`
+
 	// Array of checks. It might be empty.
 	Checks []*IstioCheck `json:"checks"`
 
