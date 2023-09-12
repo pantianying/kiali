@@ -11,7 +11,6 @@ import AuthenticationControllerContainer from './AuthenticationController';
 import history from './History';
 import InitializingScreen from './InitializingScreen';
 import StartupInitializer from './StartupInitializer';
-import LoginPageContainer from '../pages/Login/LoginPage';
 import {LoginActions} from '../actions/LoginActions';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/dist/themes/light-border.css';
@@ -112,9 +111,7 @@ class App extends React.Component<{}, AppState> {
         <PersistGate loading={<InitializingScreen />} persistor={persistor}>
           {this.state.isInitialized ? (
             <AuthenticationControllerContainer
-              publicAreaComponent={(isPostLoginPerforming: boolean, errorMsg?: string) => (
-                <LoginPageContainer isPostLoginPerforming={isPostLoginPerforming} postLoginErrorMsg={errorMsg} />
-              )}
+              publicAreaComponent={() => null}
               protectedAreaComponent={this.protectedArea}
             />
           ) : (

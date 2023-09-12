@@ -109,6 +109,7 @@ export interface LoginState {
   message: string;
   session?: LoginSession;
   status: LoginStatus;
+  authControllerUpdate: number
 }
 
 export interface InterfaceSettings {

@@ -42,7 +42,8 @@ export const LoginActions = {
     } as LoginPayload)
   ),
   sessionExpired: createAction(ActionKeys.SESSION_EXPIRED),
-  setLandingRoute: createStandardAction(ActionKeys.SET_LANDING_ROUTE)<string | undefined>()
+  setLandingRoute: createStandardAction(ActionKeys.SET_LANDING_ROUTE)<string | undefined>(),
+  forceUpdateAuthController: createStandardAction(ActionKeys.FORCE_UPDATE_AUTH_CONTROLLER)(),
 };
 
 export type LoginAction = ActionType<typeof LoginActions>;

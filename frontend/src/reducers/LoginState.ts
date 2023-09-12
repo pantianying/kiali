@@ -8,7 +8,8 @@ export const INITIAL_LOGIN_STATE: LoginStateInterface = {
   landingRoute: undefined,
   message: '',
   session: undefined,
-  status: LoginStatus.loggedOut
+  status: LoginStatus.loggedOut,
+  authControllerUpdate: 0,
 };
 
 // This Reducer allows changes to the 'loginState' portion of Redux Store
@@ -62,6 +63,10 @@ const loginState = (state: LoginStateInterface = INITIAL_LOGIN_STATE, action: Ki
       return updateState(state, {
         landingRoute: action.payload
       });
+    case getType(LoginActions.forceUpdateAuthController):
+      return updateState(state, {
+        authControllerUpdate: state.authControllerUpdate + 1
+      })
     default:
       return state;
   }

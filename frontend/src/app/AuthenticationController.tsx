@@ -14,6 +14,9 @@ import InitializingScreen from './InitializingScreen';
 import { getKioskMode, isKioskMode } from '../utils/SearchParamUtils';
 import * as AlertUtils from '../utils/AlertUtils';
 import { setServerConfig, serverConfig, humanDurations } from '../config/ServerConfig';
+import Oauth from './Oauth';
+import { getAuthToken } from '../utils/Token';
+import { getMicroAppConfig } from '../utils/Micro'
 import { AuthStrategy } from '../types/Auth';
 import { JaegerInfo } from '../types/JaegerInfo';
 import { ServerConfig } from '../types/ServerConfig';
@@ -37,10 +40,12 @@ interface AuthenticationControllerReduxProps {
   checkCredentials: () => void;
   isLoginError: boolean;
   landingRoute?: string;
+  authControllerUpdate: number;
   setActiveNamespaces: (namespaces: Namespace[]) => void;
   setDuration: (duration: DurationInSeconds) => void;
   setJaegerInfo: (jaegerInfo: JaegerInfo | null) => void;
   setLandingRoute: (route: string | undefined) => void;
+  forceUpdateAuthController: () => void;
   setNamespaces: (namespaces: Namespace[], receivedAt: Date) => void;
   setRefreshInterval: (interval: IntervalInMilliseconds) => void;
   setTrafficRates: (rates: TrafficRate[]) => void;
@@ -147,6 +152,9 @@ export class AuthenticationController extends React.Component<
   }
 
   render() {
+    if (!getAuthToken() && getMicroAppConfig()) { // 在开放平台内打开且不存在token
+      return <Oauth forceUpdate={this.props.forceUpdateAuthController} />
+    }
     if (this.state.stage === LoginStage.LOGGED_IN) {
       return this.props.protectedAreaComponent;
     } else if (this.state.stage === LoginStage.LOGGED_IN_AT_LOAD) {
@@ -354,7 +362,8 @@ export class AuthenticationController extends React.Component<
 const mapStateToProps = (state: KialiAppState) => ({
   authenticated: state.authentication.status === LoginStatus.loggedIn,
   isLoginError: state.authentication.status === LoginStatus.error,
-  landingRoute: state.authentication.landingRoute
+  landingRoute: state.authentication.landingRoute,
+  authControllerUpdate: state.authentication.authControllerUpdate
 });
 
 const mapDispatchToProps = (dispatch: KialiDispatch) => ({
@@ -364,6 +373,7 @@ const mapDispatchToProps = (dispatch: KialiDispatch) => ({
   setDuration: bindActionCreators(UserSettingsActions.setDuration, dispatch),
   setJaegerInfo: bindActionCreators(JaegerActions.setInfo, dispatch),
   setLandingRoute: bindActionCreators(LoginActions.setLandingRoute, dispatch),
+  forceUpdateAuthController: bindActionCreators(LoginActions.forceUpdateAuthController, dispatch),
   setNamespaces: bindActionCreators(NamespaceActions.receiveList, dispatch),
   setRefreshInterval: bindActionCreators(UserSettingsActions.setRefreshInterval, dispatch),
   setTrafficRates: bindActionCreators(GraphToolbarActions.setTrafficRates, dispatch),

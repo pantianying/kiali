@@ -1,5 +1,7 @@
-import axios, { AxiosError } from 'axios';
+import { AxiosError } from 'axios';
 import { config } from '../config';
+import axiosInstance from '../utils/Axios'
+import { getAuthToken } from '../utils/Token';
 import { LoginSession } from '../store/Store';
 import { App } from '../types/App';
 import { AppList } from '../types/AppList';
@@ -41,6 +43,7 @@ import { Span, TracingQuery } from 'types/Tracing';
 import { TLSStatus } from '../types/TLSStatus';
 import { Workload, WorkloadNamespaceResponse } from '../types/Workload';
 import { CertsInfo } from 'types/CertsInfo';
+
 export const ANONYMOUS_USER = 'anonymous';
 
 export interface Response<T> {
@@ -64,8 +67,12 @@ const getHeaders = () => {
 /** Create content type correctly for a given request type */
 const getHeadersWithMethod = method => {
   var allHeaders = getHeaders();
+  const authToken = getAuthToken();
   if (method === HTTP_VERBS.PATCH) {
     allHeaders['Content-Type'] = 'application/json';
+  }
+  if (authToken) {
+    allHeaders['Authorization'] = `Bearer ${authToken}`
   }
 
   return allHeaders;
@@ -79,7 +86,7 @@ const newRequest = <P>(method: HTTP_VERBS, url: string, queryParams: any, data: 
   const { addEnv = true } = options || {}
   const env = sessionStorage.getItem('mesh-env')
 
-  return axios.request<P>({
+  return axiosInstance.request<P>({
     method: method,
     url: `${addEnv && env ? '/' + env : ''}/${url}`,
     data: data,
@@ -105,7 +112,7 @@ export const login = async (
   const params = new URLSearchParams();
   params.append('token', request.token);
 
-  return axios({
+  return axiosInstance({
     method: HTTP_VERBS.POST,
     url: urls.authenticate,
     headers: getHeaders(),
@@ -125,6 +132,10 @@ export const getAuthInfo = async () => {
 export const checkOpenshiftAuth = async (data: any): Promise<Response<LoginSession>> => {
   return newRequest<LoginSession>(HTTP_VERBS.POST, urls.authenticate, {}, data);
 };
+
+export const getToken = (params) => {
+  return newRequest<StatusState>(HTTP_VERBS.GET, urls.token, params, {}, { addEnv: false });
+}
 
 export const getStatus = () => {
   return newRequest<StatusState>(HTTP_VERBS.GET, urls.status, {}, {});
