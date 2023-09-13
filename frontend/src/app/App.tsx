@@ -1,4 +1,3 @@
-import axios from 'axios';
 import * as React from 'react';
 import {PersistGate} from 'redux-persist/lib/integration/react';
 import {Provider} from 'react-redux';
@@ -11,7 +10,6 @@ import AuthenticationControllerContainer from './AuthenticationController';
 import history from './History';
 import InitializingScreen from './InitializingScreen';
 import StartupInitializer from './StartupInitializer';
-import {LoginActions} from '../actions/LoginActions';
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/dist/themes/light-border.css';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -30,59 +28,6 @@ if (Visibility.hidden()) {
 } else {
   store.dispatch(GlobalActions.setPageVisibilityVisible());
 }
-
-const getIsLoadingState = () => {
-  const state = store.getState();
-  return state && state.globalState.loadingCounter > 0;
-};
-
-const decrementLoadingCounter = () => {
-  if (getIsLoadingState()) {
-    store.dispatch(GlobalActions.decrementLoadingCounter());
-  }
-};
-
-const openshift_token: string | null = (function () {
-  const urlParams = new URLSearchParams(document.location.search);
-  return urlParams.get('oauth_token');
-}());
-
-// intercept all Axios requests and dispatch the INCREMENT_LOADING_COUNTER Action
-axios.interceptors.request.use(
-  request => {
-    // dispatch an action to turn spinner on
-    store.dispatch(GlobalActions.incrementLoadingCounter());
-
-    // Set OpenShift token, if available.
-    if (openshift_token) {
-      request.headers.Authorization = `Bearer ${openshift_token}`;
-    }
-
-    return request;
-  },
-  error => {
-    console.log(error);
-    return Promise.reject(error);
-  }
-);
-
-// intercept all Axios responses and dispatch the DECREMENT_LOADING_COUNTER Action
-axios.interceptors.response.use(
-  response => {
-    decrementLoadingCounter();
-    return response;
-  },
-  error => {
-    // The response was rejected, turn off the spinning
-    decrementLoadingCounter();
-
-    if (error.response.status === 401) {
-      store.dispatch(LoginActions.sessionExpired());
-    }
-
-    return Promise.reject(error);
-  }
-);
 
 type AppState = {
   isInitialized: boolean;
