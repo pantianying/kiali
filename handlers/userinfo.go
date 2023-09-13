@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"github.com/kiali/kiali/log"
 	"net/http"
 )
 
@@ -89,7 +90,7 @@ func getUserToken(Code string) (*UserTokenInfo, error) {
 	}
 	reqBody := ReqBodyStu{
 		Code:      Code,
-		GrantType: "client_credentials",
+		GrantType: "authorization_code",
 	}
 
 	responseBody := RespBodyStu{}
@@ -111,6 +112,7 @@ func getUserToken(Code string) (*UserTokenInfo, error) {
 	}
 
 	if responseBody.Code != 0 {
+		log.Warning("get user token error: ", responseBody)
 		return nil, errors.New("get user token error")
 	}
 	return &responseBody.Data, nil
@@ -125,7 +127,7 @@ func getUserInfo(token string) (*UserInfo, error) {
 	}
 	responseBody := RespBodyStu{}
 
-	req, err := http.NewRequest("POST", domainUrl+"/open-api/v1/userinfo", nil)
+	req, err := http.NewRequest("GET", domainUrl+"/open-api/v1/userinfo", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +143,8 @@ func getUserInfo(token string) (*UserInfo, error) {
 	}
 
 	if responseBody.Code != 0 {
-		return nil, errors.New("get user token error")
+		log.Warningf("response err: %v,%v", responseBody, token)
+		return nil, errors.New("get user info error")
 	}
 	return &responseBody.Data, nil
 }

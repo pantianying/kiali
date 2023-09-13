@@ -202,6 +202,11 @@ func IstioConfigDetails(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	userInfo, err := getUserInfo(token)
+	if err != nil {
+		log.Warningf("get user info error: %s", err.Error())
+		RespondWithError(w, http.StatusBadRequest, "get user info error: "+err.Error())
+		return
+	}
 	mergeUserPermissions(userInfo, object, namespace, &istioConfigDetails.Permissions)
 
 	RespondWithJSON(w, http.StatusOK, istioConfigDetails)
