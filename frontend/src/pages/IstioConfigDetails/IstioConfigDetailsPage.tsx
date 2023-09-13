@@ -289,6 +289,19 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     });
   };
 
+  onReview = () => {
+    jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
+      const jsonPatch = JSON.stringify(
+        mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
+      ).replace(new RegExp('"(,null)+]', 'g'), '"]');
+      console.log('review', this.props.match.params.namespace,
+        this.props.match.params.objectType,
+        this.props.match.params.object,
+        jsonPatch
+      )
+    });
+  };
+
   injectGalleyError = (error: AxiosError): AceValidations => {
     const msg: string[] = API.getErrorString(error).split(':');
     const errMsg: string = msg.slice(1, msg.length).join(':');
@@ -505,7 +518,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
           width={'100%'}
           className={'istio-ace-editor'}
           wrapEnabled={true}
-          readOnly={!this.canUpdate()}
+          readOnly={!Boolean(this.state.istioObjectDetails?.permissions.update) && !Boolean(this.state.istioObjectDetails?.permissions.preview)}
           setOptions={aceOptions}
           value={this.state.istioObjectDetails ? yamlSource : undefined}
           annotations={editorValidations.annotations}
@@ -541,7 +554,10 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         canUpdate={this.canUpdate() && this.state.isModified && !this.state.isRemoved && !yamlErrors}
         onCancel={this.onCancel}
         onUpdate={this.onUpdate}
+        onReview={this.onReview}
         onRefresh={this.onRefresh}
+        showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
+        showReview={Boolean(this.state.istioObjectDetails?.permissions.preview)}
         showOverview={showOverview}
         overview={this.state.isExpanded}
         onOverview={this.onDrawerToggle}

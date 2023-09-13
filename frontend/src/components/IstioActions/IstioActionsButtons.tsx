@@ -8,7 +8,10 @@ type Props = {
   canUpdate: boolean;
   onCancel: () => void;
   onUpdate: () => void;
+  onReview: () => void;
   onRefresh: () => void;
+  showSave: boolean;
+  showReview: boolean;
   showOverview: boolean;
   overview: boolean;
   onOverview: () => void;
@@ -30,21 +33,30 @@ class IstioActionButtons extends React.Component<Props, State> {
     return (
       <>
         <span style={{ float: 'left', padding: '10px' }}>
-          {!this.props.readOnly && (
+          {this.props.showSave && (
             <span style={{ paddingRight: '5px' }}>
               <Button variant={ButtonVariant.primary} isDisabled={!this.props.canUpdate} onClick={this.props.onUpdate}>
-                Save
+                保存
               </Button>
             </span>
           )}
+          {
+            this.props.showReview && (
+              <span style={{ paddingRight: '5px' }}>
+               <Button variant={ButtonVariant.primary} onClick={this.props.onReview}>
+                 提交审核
+              </Button>
+          </span>
+            )
+          }
           <span style={{ paddingRight: '5px' }}>
             <Button variant={ButtonVariant.secondary} onClick={this.handleRefresh}>
-              Reload
+              重新加载
             </Button>
           </span>
           <span style={{ paddingRight: '5px' }}>
             <Button variant={ButtonVariant.secondary} onClick={this.props.onCancel}>
-              {this.props.readOnly ? 'Close' : 'Cancel'}
+              {this.props.showSave ? '取消' : '关闭'}
             </Button>
           </span>
         </span>

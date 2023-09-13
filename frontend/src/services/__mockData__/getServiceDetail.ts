@@ -116,7 +116,8 @@ export const SERVICE_DETAILS: ServiceDetailsInfo = {
   istioPermissions: {
     update: false,
     delete: false,
-    create: false
+    create: false,
+    preview: false,
   },
   workloads: [],
   health: undefined,
