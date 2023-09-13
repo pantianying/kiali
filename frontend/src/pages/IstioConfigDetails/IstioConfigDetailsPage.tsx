@@ -1,5 +1,7 @@
 import * as React from 'react';
 import { Prompt, RouteComponentProps } from 'react-router-dom';
+import { connect } from 'react-redux'
+
 import {
   aceOptions,
   IstioConfigDetails,
@@ -57,6 +59,7 @@ import RenderHeaderContainer from "../../components/Nav/Page/RenderHeader";
 import {ErrorMsg} from "../../types/ErrorMsg";
 import ErrorSection from "../../components/ErrorSection/ErrorSection";
 import RefreshNotifier from "../../components/Refresh/RefreshNotifier";
+import { KialiAppState } from '../../store/Store'
 
 // Enables the search box for the ACEeditor
 require('ace-builds/src-noconflict/ext-searchbox');
@@ -68,6 +71,10 @@ const rightToolbarStyle = style({
 const editorDrawer = style({
   margin: '0'
 });
+
+type ReduxProps = {
+  userInfo?: Record<string, any> | null
+};
 
 interface IstioConfigDetailsState {
   istioObjectDetails?: IstioConfigDetails;
@@ -89,7 +96,7 @@ const paramToTab: { [key: string]: number } = {
   yaml: 0
 };
 
-class IstioConfigDetailsPage extends React.Component<RouteComponentProps<IstioConfigId>, IstioConfigDetailsState> {
+class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponentProps<IstioConfigId>, IstioConfigDetailsState> {
   aceEditorRef: React.RefObject<AceEditor>;
   drawerRef: React.RefObject<IstioConfigDetailsPage>;
   promptTo: string;
@@ -574,23 +581,39 @@ class IstioConfigDetailsPage extends React.Component<RouteComponentProps<IstioCo
           <ErrorSection error={this.state.error} />
         )}
         {!this.state.error && (
-        <ParameterizedTabs
-          id="basic-tabs"
-          onSelect={tabValue => {
-            this.setState({ currentTab: tabValue });
-          }}
-          tabMap={paramToTab}
-          tabName={tabName}
-          defaultTab={this.defaultTab()}
-          activeTab={this.state.currentTab}
-          mountOnEnter={false}
-          unmountOnExit={true}
-        >
-          <Tab key="istio-yaml" title={`YAML ${this.state.isModified ? ' * ' : ''}`} eventKey={0}>
-            <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
-          </Tab>
-        </ParameterizedTabs>
-          )}
+          <>
+            {
+              this.props.userInfo?.identityName && (
+                <div
+                  style={{
+                    zIndex: 9,
+                    position: 'absolute',
+                    top: 10,
+                    right: 20,
+                    color: 'rgb(43, 154, 243)',
+                  }}>
+                  当前角色：{this.props.userInfo?.identityName}
+                </div>
+              )
+            }
+            <ParameterizedTabs
+              id="basic-tabs"
+              onSelect={tabValue => {
+                this.setState({ currentTab: tabValue });
+              }}
+              tabMap={paramToTab}
+              tabName={tabName}
+              defaultTab={this.defaultTab()}
+              activeTab={this.state.currentTab}
+              mountOnEnter={false}
+              unmountOnExit={true}
+            >
+              <Tab key="istio-yaml" title={`YAML ${this.state.isModified ? ' * ' : ''}`} eventKey={0}>
+                <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
+              </Tab>
+            </ParameterizedTabs>
+          </>
+        )}
         <Prompt
           message={location => {
             if (this.state.isModified) {
@@ -609,4 +632,9 @@ class IstioConfigDetailsPage extends React.Component<RouteComponentProps<IstioCo
   }
 }
 
-export default IstioConfigDetailsPage;
+const mapStateToProps = (state: KialiAppState): ReduxProps => ({
+  userInfo: state.userSettings.userInfo,
+});
+
+const IstioConfigDetailsPageContainer = connect(mapStateToProps)(IstioConfigDetailsPage);
+export default IstioConfigDetailsPageContainer;
