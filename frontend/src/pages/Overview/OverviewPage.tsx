@@ -69,6 +69,7 @@ import OverviewStatusContainer from './OverviewStatus';
 import ControlPlaneNamespaceStatus from './ControlPlaneNamespaceStatus';
 import { IstiodResourceThresholds } from 'types/IstioStatus';
 import { createIcon } from '../../components/Health/Helper'
+import { UserIdentityEnum } from '../../config/Enum'
 
 const gridStyleCompact = style({
   backgroundColor: '#f5f5f5',
@@ -151,6 +152,7 @@ type ReduxProps = {
   meshStatus: string;
   navCollapse: boolean;
   refreshInterval: IntervalInMilliseconds;
+  userInfo?: Record<string, any> | null
 };
 
 type OverviewProps = ReduxProps & {};
@@ -840,7 +842,19 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
     );
     const namespaceActions = filteredNamespaces.map((ns, i) => {
       const actions = this.getNamespaceActions(ns);
-      return <OverviewNamespaceActions key={'namespaceAction_' + i} namespace={ns.name} actions={actions} />;
+      const authFilter = (list) => { // 仅管理员才可以访问的菜单
+        const needFilterMenus = ['Applications', 'Workloads', 'Services', 'Enable Auto Injection', 'Create  Traffic Policies']
+        return list.filter((item) => {
+          if (Array.isArray(item.children))item.children = authFilter(item.children)
+          return this.props.userInfo?.identity === UserIdentityEnum.administrator || !needFilterMenus.includes(item.title)
+        })
+      }
+      const separatorFilter = (list) => { // 过滤无用的分隔符
+        const data = list.filter(({ isSeparator }, index, arr)=> !isSeparator || !(arr[index-1]?.isSeparator))
+        return data.filter(({ isSeparator }, index, arr)=> index !== arr.length-1 || !isSeparator)
+      }
+
+      return <OverviewNamespaceActions key={'namespaceAction_' + i} namespace={ns.name} actions={(separatorFilter(authFilter(actions)))}/>;
     });
 
     return (
@@ -1176,7 +1190,8 @@ const mapStateToProps = (state: KialiAppState): ReduxProps => ({
   kiosk: state.globalState.kiosk,
   meshStatus: meshWideMTLSStatusSelector(state),
   navCollapse: state.userSettings.interface.navCollapse,
-  refreshInterval: refreshIntervalSelector(state)
+  refreshInterval: refreshIntervalSelector(state),
+  userInfo: state.userSettings.userInfo,
 });
 
 const OverviewPageContainer = connect(mapStateToProps)(OverviewPage);
