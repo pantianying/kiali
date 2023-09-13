@@ -165,6 +165,7 @@ const conf = {
       serviceDashboard: (namespace: string, service: string) =>
         `api/namespaces/${namespace}/services/${service}/dashboard`,
       token: 'api/userToken',
+      userInfo: 'api/userInfo',
       status: 'api/status',
       workloads: (namespace: string) => `api/namespaces/${namespace}/workloads`,
       workload: (namespace: string, workload: string) => `api/namespaces/${namespace}/workloads/${workload}`,

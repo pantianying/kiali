@@ -31,6 +31,7 @@ const loginState = (state: LoginStateInterface = INITIAL_LOGIN_STATE, action: Ki
       return {
         ...INITIAL_LOGIN_STATE,
         landingRoute: state.landingRoute,
+        authControllerUpdate: state.authControllerUpdate,
         status: LoginStatus.loggedIn,
         session: action.payload.session
       };

@@ -60,7 +60,7 @@ function errorResponseInterceptor(err: Record<string, any>) {
   if (error.response) {
     if (error.status === 401) {
       removeAuthToken()
-      store.dispatch(LoginActions.sessionExpired());
+      // store.dispatch(LoginActions.sessionExpired());
       store.dispatch(LoginActions.forceUpdateAuthController());
     }
   }

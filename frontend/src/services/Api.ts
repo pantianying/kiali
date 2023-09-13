@@ -137,6 +137,10 @@ export const getToken = (params) => {
   return newRequest<StatusState>(HTTP_VERBS.GET, urls.token, params, {}, { addEnv: false });
 }
 
+export const getUserInfo = () => {
+  return newRequest<StatusState>(HTTP_VERBS.GET, urls.userInfo, {}, {}, { addEnv: false });
+}
+
 export const getStatus = () => {
   return newRequest<StatusState>(HTTP_VERBS.GET, urls.status, {}, {});
 };

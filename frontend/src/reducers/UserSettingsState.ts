@@ -11,7 +11,8 @@ export const INITIAL_USER_SETTINGS_STATE: UserSettings = {
   interface: { navCollapse: false },
   refreshInterval: config.toolbar.defaultRefreshInterval,
   replayActive: false,
-  replayQueryTime: 0
+  replayQueryTime: 0,
+  userInfo: null,
 };
 
 const UserSettingsState = (state: UserSettings = INITIAL_USER_SETTINGS_STATE, action: KialiAppAction): UserSettings => {
@@ -43,6 +44,11 @@ const UserSettingsState = (state: UserSettings = INITIAL_USER_SETTINGS_STATE, ac
       return updateState(state, {
         replayActive: !state.replayActive,
         replayQueryTime: 0
+      });
+    }
+    case getType(UserSettingsActions.setUserInfo): {
+      return updateState(state, {
+        userInfo: action.payload,
       });
     }
     default:

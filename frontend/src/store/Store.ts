@@ -123,6 +123,7 @@ export interface UserSettings {
   replayActive: boolean;
   replayQueryTime: TimeInMilliseconds;
   timeRange: TimeRange;
+  userInfo?: null | Record<string, any>
 }
 
 export interface TourState {

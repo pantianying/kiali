@@ -10,7 +10,8 @@ export const UserSettingsActions = {
   setTimeRange: createStandardAction(ActionKeys.SET_TIME_RANGE)<TimeRange>(),
   setRefreshInterval: createStandardAction(ActionKeys.SET_REFRESH_INTERVAL)<IntervalInMilliseconds>(),
   setReplayQueryTime: createStandardAction(ActionKeys.SET_REPLAY_QUERY_TIME)<TimeInMilliseconds>(),
-  toggleReplayActive: createAction(ActionKeys.TOGGLE_REPLAY_ACTIVE)
+  toggleReplayActive: createAction(ActionKeys.TOGGLE_REPLAY_ACTIVE),
+  setUserInfo: createStandardAction(ActionKeys.SET_USER_INFO)<Record<string, any>>()
 };
 
 export type UserSettingsAction = ActionType<typeof UserSettingsActions>;

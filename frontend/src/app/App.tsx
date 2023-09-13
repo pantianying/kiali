@@ -1,15 +1,13 @@
 import * as React from 'react';
 import {PersistGate} from 'redux-persist/lib/integration/react';
 import {Provider} from 'react-redux';
-import {Router, withRouter} from 'react-router-dom';
 import * as Visibility from 'visibilityjs';
 import {GlobalActions} from '../actions/GlobalActions';
-import NavigationContainer from '../components/Nav/Navigation';
 import {persistor, store} from '../store/ConfigStore';
 import AuthenticationControllerContainer from './AuthenticationController';
-import history from './History';
 import InitializingScreen from './InitializingScreen';
 import StartupInitializer from './StartupInitializer';
+import BaseRouter from './BaseRouter'
 import 'tippy.js/dist/tippy.css';
 import 'tippy.js/dist/themes/light-border.css';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -34,7 +32,6 @@ type AppState = {
 };
 
 class App extends React.Component<{}, AppState> {
-  private protectedArea: React.ReactNode;
 
   constructor(props: {}) {
     super(props);
@@ -42,12 +39,6 @@ class App extends React.Component<{}, AppState> {
       isInitialized: false
     };
 
-    const Navigator = withRouter(NavigationContainer);
-    this.protectedArea = (
-      <Router history={history}>
-        <Navigator />
-      </Router>
-    );
   }
 
   render() {
@@ -57,7 +48,7 @@ class App extends React.Component<{}, AppState> {
           {this.state.isInitialized ? (
             <AuthenticationControllerContainer
               publicAreaComponent={() => null}
-              protectedAreaComponent={this.protectedArea}
+              protectedAreaComponent={<BaseRouter/>}
             />
           ) : (
             <StartupInitializer onInitializationFinished={this.initializationFinishedHandler} />
