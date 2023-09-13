@@ -6,6 +6,7 @@ type TabsProps = {
   activeTab: string;
   defaultTab: string;
   id: string;
+  className?: string;
   mountOnEnter?: boolean;
   onSelect: (tabName: string) => void;
   postHandler?: (tabName: string) => void;
@@ -93,6 +94,7 @@ export default class ParameterizedTabs extends React.Component<TabsProps> {
     return (
       <Tabs
         id={this.props.id}
+        className={this.props.className}
         activeKey={this.activeIndex()}
         onSelect={(_, ek) => {
           if (!this.isLinkTab(ek as number)) {

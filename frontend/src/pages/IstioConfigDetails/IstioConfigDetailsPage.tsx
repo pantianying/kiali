@@ -93,7 +93,8 @@ interface IstioConfigDetailsState {
 
 const tabName = 'list';
 const paramToTab: { [key: string]: number } = {
-  yaml: 0
+  yaml: 0,
+  preview: 1,
 };
 
 class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponentProps<IstioConfigId>, IstioConfigDetailsState> {
@@ -603,22 +604,9 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         )}
         {!this.state.error && (
           <>
-            {
-              this.props.userInfo?.identityName && (
-                <div
-                  style={{
-                    zIndex: 9,
-                    position: 'absolute',
-                    top: 10,
-                    right: 20,
-                    color: 'rgb(43, 154, 243)',
-                  }}>
-                  当前角色：{this.props.userInfo?.identityName}
-                </div>
-              )
-            }
             <ParameterizedTabs
               id="basic-tabs"
+              className="istio-config-details-page"
               onSelect={tabValue => {
                 this.setState({ currentTab: tabValue });
               }}
@@ -629,7 +617,24 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
               mountOnEnter={false}
               unmountOnExit={true}
             >
+              {
+                this.props.userInfo?.identityName && (
+                  <div
+                    style={{
+                      zIndex: 9,
+                      position: 'absolute',
+                      top: 10,
+                      right: 20,
+                      color: 'rgb(43, 154, 243)',
+                    }}>
+                    当前角色：{this.props.userInfo?.identityName}
+                  </div>
+                )
+              }
               <Tab key="istio-yaml" title={`YAML ${this.state.isModified ? ' * ' : ''}`} eventKey={0}>
+                <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
+              </Tab>
+              <Tab key="istio-preview" title='待发布' eventKey={1}>
                 <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
               </Tab>
             </ParameterizedTabs>
