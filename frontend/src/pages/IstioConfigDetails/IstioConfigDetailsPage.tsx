@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Prompt, RouteComponentProps } from 'react-router-dom';
 import { connect } from 'react-redux'
+import { message } from 'antd'
 
 import {
   aceOptions,
@@ -35,7 +36,6 @@ import './IstioConfigDetailsPage.css';
 import { default as IstioActionButtonsContainer } from '../../components/IstioActions/IstioActionsButtons';
 import history from '../../app/History';
 import { Paths } from '../../config';
-import { MessageType } from '../../types/MessageCenter';
 import { getIstioObject, mergeJsonPatch } from '../../utils/IstioConfigUtils';
 import { style } from 'typestyle';
 import ParameterizedTabs, { activeTab } from '../../components/Tab/Tabs';
@@ -271,17 +271,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         jsonPatch
       )
         .then(() => {
-          const targetMessage =
-            this.props.match.params.namespace +
-            ' / ' +
-            this.props.match.params.objectType +
-            ' / ' +
-            this.props.match.params.object;
-          AlertUtils.add('Changes applied on ' + targetMessage, 'default', MessageType.SUCCESS);
+          message.success('保存成功')
           this.fetchIstioObjectDetails();
         })
         .catch(error => {
-          AlertUtils.addError('Could not update IstioConfig details.', error);
+          message.error('Could not update IstioConfig details.');
           this.setState({
             yamlValidations: this.injectGalleyError(error)
           });
@@ -289,16 +283,27 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     });
   };
 
-  onReview = () => {
+  onPreview = () => {
     jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
       const jsonPatch = JSON.stringify(
         mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
       ).replace(new RegExp('"(,null)+]', 'g'), '"]');
-      console.log('review', this.props.match.params.namespace,
+      API.updatePreviewIstioConfigDetail(
+        this.props.match.params.namespace,
         this.props.match.params.objectType,
         this.props.match.params.object,
         jsonPatch
       )
+        .then(() => {
+          message.success('提交审核成功')
+          // this.fetchIstioObjectDetails(); // TODO 更新待审核的信息
+        })
+        .catch(error => {
+          message.error('Could not update Preview IstioConfig details.', error);
+          this.setState({
+            yamlValidations: this.injectGalleyError(error)
+          });
+        });
     });
   };
 
@@ -554,10 +559,10 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         canUpdate={this.canUpdate() && this.state.isModified && !this.state.isRemoved && !yamlErrors}
         onCancel={this.onCancel}
         onUpdate={this.onUpdate}
-        onReview={this.onReview}
+        onPreview={this.onPreview}
         onRefresh={this.onRefresh}
         showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
-        showReview={Boolean(this.state.istioObjectDetails?.permissions.preview)}
+        showPreview={Boolean(this.state.istioObjectDetails?.permissions.preview)}
         showOverview={showOverview}
         overview={this.state.isExpanded}
         onOverview={this.onDrawerToggle}

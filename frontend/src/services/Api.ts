@@ -250,6 +250,15 @@ export const updateIstioConfigDetail = (
   return newRequest(HTTP_VERBS.PATCH, urls.istioConfigDetail(namespace, objectType, object), {}, jsonPatch);
 };
 
+export const updatePreviewIstioConfigDetail = (
+  namespace: string,
+  objectType: string,
+  object: string,
+  jsonPatch: string
+): Promise<Response<string>> => {
+  return newRequest(HTTP_VERBS.PATCH, urls.previewIstioConfigDetail(namespace, objectType, object), {}, jsonPatch);
+};
+
 export const createIstioConfigDetail = (
   namespace: string,
   objectType: string,

@@ -8,10 +8,10 @@ type Props = {
   canUpdate: boolean;
   onCancel: () => void;
   onUpdate: () => void;
-  onReview: () => void;
+  onPreview: () => void;
   onRefresh: () => void;
   showSave: boolean;
-  showReview: boolean;
+  showPreview: boolean;
   showOverview: boolean;
   overview: boolean;
   onOverview: () => void;
@@ -41,9 +41,9 @@ class IstioActionButtons extends React.Component<Props, State> {
             </span>
           )}
           {
-            this.props.showReview && (
+            this.props.showPreview && (
               <span style={{ paddingRight: '5px' }}>
-               <Button variant={ButtonVariant.primary} onClick={this.props.onReview}>
+               <Button variant={ButtonVariant.primary} onClick={this.props.onPreview}>
                  提交审核
               </Button>
           </span>
