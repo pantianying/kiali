@@ -77,6 +77,7 @@ type ReduxProps = {
 };
 
 interface IstioConfigDetailsState {
+  previewIstioData?: Record<string, any>;
   istioObjectDetails?: IstioConfigDetails;
   istioValidations?: ObjectValidation;
   originalIstioObjectDetails?: IstioConfigDetails;
@@ -134,6 +135,15 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     return title;
   }
 
+  fetchPreviewIstioObjectDetails = () => {
+    const props = this.props.match.params
+    API.getPreviewIstioConfigDetail(props.namespace, props.objectType, props.object, true).then((res) => {
+      this.setState({
+        previewIstioData: res.data,
+      })
+    })
+  }
+
   fetchIstioObjectDetails = () => {
     this.fetchIstioObjectDetailsFromProps(this.props.match.params);
   };
@@ -177,6 +187,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
 
   componentDidMount() {
     this.fetchIstioObjectDetails();
+    this.fetchPreviewIstioObjectDetails();
   }
 
   componentDidUpdate(prevProps: RouteComponentProps<IstioConfigId>, prevState: IstioConfigDetailsState): void {
@@ -457,7 +468,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     this.setState({ selectedEditorLine: line });
   };
 
-  renderEditor = () => {
+  renderYAMLEditor = () => {
     const yamlSource = this.fetchYaml();
     const istioStatusMsgs = this.getStatusMessages(this.state.istioObjectDetails);
 
@@ -550,6 +561,44 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     );
   };
 
+  renderPreviewEditor = () => {
+    const yamlSource = this.state.previewIstioData ? jsYaml.safeDump(this.state.previewIstioData, safeDumpOptions) : ''
+
+    let editorValidations: AceValidations = {
+      markers: [],
+      annotations: []
+    };
+
+    const helpAnnotations = parseHelpAnnotations(yamlSource, []);
+    helpAnnotations.forEach(ha => editorValidations.annotations.push(ha));
+
+    const editor = this.state.istioObjectDetails ? (
+      <div style={{ width: '100%' }}>
+        <AceEditor
+          ref={this.aceEditorRef}
+          mode="yaml"
+          theme="eclipse"
+          height={'var(--kiali-yaml-editor-height)'}
+          width={'100%'}
+          className={'istio-ace-editor'}
+          wrapEnabled={true}
+          readOnly={true}
+          setOptions={aceOptions}
+          value={yamlSource ? yamlSource : undefined}
+          annotations={editorValidations.annotations}
+          markers={editorValidations.markers}
+        />
+      </div>
+    ) : null;
+
+    return (
+      <div className={`object-drawer ${editorDrawer}`}>
+        {editor}
+        {this.renderActionButtons(false)}
+      </div>
+    );
+  };
+
   renderActionButtons = (showOverview: boolean) => {
     // User won't save if file has yaml errors
     const yamlErrors = !!(this.state.yamlValidations && this.state.yamlValidations.markers.length > 0);
@@ -618,24 +667,23 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
               unmountOnExit={true}
             >
               {
-                this.props.userInfo?.identityName && (
-                  <div
-                    style={{
-                      zIndex: 9,
-                      position: 'absolute',
-                      top: 10,
-                      right: 20,
-                      color: 'rgb(43, 154, 243)',
-                    }}>
-                    当前角色：{this.props.userInfo?.identityName}
-                  </div>
-                )
+                <div
+                  style={{
+                    zIndex: 9,
+                    position: 'absolute',
+                    top: 10,
+                    right: 20,
+                    color: 'rgb(43, 154, 243)',
+                  }}>
+                  {this.props.userInfo?.identityName ? `当前角色：${this.props.userInfo?.identityName}` : ''}
+                </div>
+
               }
               <Tab key="istio-yaml" title={`YAML ${this.state.isModified ? ' * ' : ''}`} eventKey={0}>
-                <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
+                <RenderComponentScroll>{this.renderYAMLEditor()}</RenderComponentScroll>
               </Tab>
               <Tab key="istio-preview" title='待发布' eventKey={1}>
-                <RenderComponentScroll>{this.renderEditor()}</RenderComponentScroll>
+                <RenderComponentScroll>{this.renderPreviewEditor()}</RenderComponentScroll>
               </Tab>
             </ParameterizedTabs>
           </>

@@ -122,7 +122,7 @@ export const login = async (
 };
 
 export const logout = () => {
-  return newRequest<undefined>(HTTP_VERBS.GET, urls.logout, {}, {});
+  return newRequest<undefined>(HTTP_VERBS.GET, urls.logout, {}, {}, { addEnv: false });
 };
 
 export const getAuthInfo = async () => {
@@ -236,6 +236,16 @@ export const getIstioConfigDetail = (namespace: string, objectType: string, obje
     {}
   );
 };
+
+export const getPreviewIstioConfigDetail = (namespace: string, objectType: string, object: string, validate: boolean) => {
+  return newRequest<IstioConfigDetails>(
+    HTTP_VERBS.GET,
+    urls.previewIstioConfigDetail(namespace, objectType, object),
+    validate ? { validate: true, help: true } : {},
+    {}
+  );
+};
+
 
 export const deleteIstioConfigDetail = (namespace: string, objectType: string, object: string) => {
   return newRequest<string>(HTTP_VERBS.DELETE, urls.istioConfigDetail(namespace, objectType, object), {}, {});
