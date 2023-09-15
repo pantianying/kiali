@@ -58,7 +58,6 @@ import { Annotation } from 'react-ace/types';
 import RenderHeaderContainer from "../../components/Nav/Page/RenderHeader";
 import {ErrorMsg} from "../../types/ErrorMsg";
 import ErrorSection from "../../components/ErrorSection/ErrorSection";
-import RefreshNotifier from "../../components/Refresh/RefreshNotifier";
 import { KialiAppState } from '../../store/Store'
 
 // Enables the search box for the ACEeditor
@@ -97,6 +96,12 @@ const paramToTab: { [key: string]: number } = {
   yaml: 0,
   preview: 1,
 };
+
+const jumpTab = (tabKey: string)=>{
+  const urlParams = new URLSearchParams('');
+  urlParams.set(tabName, tabKey);
+  history.push(history.location.pathname + '?' + urlParams.toString());
+}
 
 class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponentProps<IstioConfigId>, IstioConfigDetailsState> {
   aceEditorRef: React.RefObject<AceEditor>;
@@ -295,30 +300,6 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     });
   };
 
-  onPreview = () => {
-    jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
-      const jsonPatch = JSON.stringify(
-        mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
-      ).replace(new RegExp('"(,null)+]', 'g'), '"]');
-      API.updatePreviewIstioConfigDetail(
-        this.props.match.params.namespace,
-        this.props.match.params.objectType,
-        this.props.match.params.object,
-        jsonPatch
-      )
-        .then(() => {
-          message.success('提交审核成功')
-          // this.fetchIstioObjectDetails(); // TODO 更新待审核的信息
-        })
-        .catch(error => {
-          message.error('Could not update Preview IstioConfig details.', error);
-          this.setState({
-            yamlValidations: this.injectGalleyError(error)
-          });
-        });
-    });
-  };
-
   injectGalleyError = (error: AxiosError): AceValidations => {
     const msg: string[] = API.getErrorString(error).split(':');
     const errMsg: string = msg.slice(1, msg.length).join(':');
@@ -369,16 +350,6 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       istioValidations: undefined,
       yamlValidations: parseYamlValidations(value)
     });
-  };
-
-  onRefresh = () => {
-    let refresh = true;
-    if (this.state.isModified) {
-      refresh = window.confirm('You have unsaved changes, are you sure you want to refresh ?');
-    }
-    if (refresh) {
-      this.fetchIstioObjectDetails();
-    }
   };
 
   fetchYaml = () => {
@@ -545,6 +516,53 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       </div>
     ) : null;
 
+    const onPreview = () => {
+      jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
+        const jsonPatch = JSON.stringify(
+          mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
+        ).replace(new RegExp('"(,null)+]', 'g'), '"]');
+        API.updatePreviewIstioConfigDetail(
+          this.props.match.params.namespace,
+          this.props.match.params.objectType,
+          this.props.match.params.object,
+          jsonPatch
+        )
+          .then(() => {
+            message.success('提交审核成功')
+            this.fetchPreviewIstioObjectDetails(); //  更新待审核的信息
+            this.setState({ // 先修正修改状态
+              isModified: false,
+              yamlModified: '',
+            },()=>{  // 修正后跳转，否则会有提示
+              jumpTab('preview')
+              this.setState({
+                currentTab: 'preview'
+              })
+            })
+          })
+          .catch(error => {
+            message.error('Could not update Preview IstioConfig details.', error);
+            this.setState({
+              yamlValidations: this.injectGalleyError(error)
+            });
+          });
+      });
+    };
+
+    const onRefresh = () => {
+      let refresh = true;
+      if (this.state.isModified) {
+        refresh = window.confirm('You have unsaved changes, are you sure you want to refresh ?');
+      }
+      if (refresh) {
+        this.fetchIstioObjectDetails();
+      }
+    };
+
+    const onCancel = () => {
+      this.backToList();
+    };
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {showCards ? (
@@ -556,7 +574,13 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         ) : (
           editor
         )}
-        {this.renderActionButtons(showCards)}
+        {this.renderActionButtons({
+          showOverview: showCards,
+          showPreview: true,
+          onPreview,
+          onRefresh,
+          onCancel,
+        })}
       </div>
     );
   };
@@ -575,7 +599,6 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     const editor = this.state.istioObjectDetails ? (
       <div style={{ width: '100%' }}>
         <AceEditor
-          ref={this.aceEditorRef}
           mode="yaml"
           theme="eclipse"
           height={'var(--kiali-yaml-editor-height)'}
@@ -591,15 +614,33 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       </div>
     ) : null;
 
+    const onPreview = () => {
+
+    }
+
+    const onRefresh = () => {
+      this.fetchPreviewIstioObjectDetails()
+    };
+
+    const onCancel = () => {
+      this.backToList();
+    };
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {editor}
-        {this.renderActionButtons(false)}
+        {this.renderActionButtons({
+          showOverview: false,
+          showPreview: false,
+          onPreview,
+          onRefresh,
+          onCancel,
+        })}
       </div>
     );
   };
 
-  renderActionButtons = (showOverview: boolean) => {
+  renderActionButtons = ({ showOverview, showPreview, onPreview, onRefresh, onCancel }) => {
     // User won't save if file has yaml errors
     const yamlErrors = !!(this.state.yamlValidations && this.state.yamlValidations.markers.length > 0);
     return (
@@ -607,12 +648,12 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         objectName={this.props.match.params.object}
         readOnly={!this.canUpdate()}
         canUpdate={this.canUpdate() && this.state.isModified && !this.state.isRemoved && !yamlErrors}
-        onCancel={this.onCancel}
+        onCancel={onCancel}
         onUpdate={this.onUpdate}
-        onPreview={this.onPreview}
-        onRefresh={this.onRefresh}
+        onPreview={onPreview}
+        onRefresh={onRefresh}
         showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
-        showPreview={Boolean(this.state.istioObjectDetails?.permissions.preview)}
+        showPreview={showPreview && Boolean(this.state.istioObjectDetails?.permissions.preview)}
         showOverview={showOverview}
         overview={this.state.isExpanded}
         onOverview={this.onDrawerToggle}
@@ -642,7 +683,6 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
   render() {
     return (
       <>
-        <RefreshNotifier onTick={this.onRefresh} />
         <RenderHeaderContainer
           location={this.props.location}
           rightToolbar={<RefreshContainer id="config_details_refresh" hideLabel={true} />}
