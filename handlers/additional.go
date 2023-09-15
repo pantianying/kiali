@@ -44,12 +44,12 @@ type StatusStu struct {
 	Link  string `json:"link,omitempty"`
 }
 
-type IstioConfigDetailsPreview struct {
-	Namespace   models.Namespace `json:"namespace"`
-	ObjectType  string           `json:"objectType"`
-	Object      string           `json:"object"`
-	PreviewData string           `json:"previewData"`
-}
+//type IstioConfigDetailsPreview struct {
+//	Namespace   models.Namespace `json:"namespace"`
+//	ObjectType  string           `json:"objectType"`
+//	Object      string           `json:"object"`
+//	PreviewData string           `json:"previewData"`
+//}
 
 func AdditionalMetricHandler(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
@@ -83,13 +83,9 @@ func IstioConfigQueryPreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	istioConfigDetailPreview := IstioConfigDetailsPreview{}
-	istioConfigDetailPreview.Namespace = models.Namespace{Name: namespace}
-	istioConfigDetailPreview.ObjectType = objectType
-	istioConfigDetailPreview.Object = object
-	istioConfigDetailPreview.PreviewData = string(ReadReleasingConfigFile(object, namespace, objectType))
+	data := ReadReleasingConfigFile(object, namespace, objectType)
 	audit(r, "QUERY PREVIEW on Namespace: "+namespace+" Type: "+objectType+" Name: "+object)
-	RespondWithJSON(w, http.StatusOK, istioConfigDetailPreview)
+	RespondWithBytes(w, http.StatusOK, data)
 }
 
 func IstioConfigCreateOrUpdatePreview(w http.ResponseWriter, r *http.Request) {
@@ -112,11 +108,6 @@ func IstioConfigCreateOrUpdatePreview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	istioConfigDetailPreview := IstioConfigDetailsPreview{}
-	istioConfigDetailPreview.Namespace = models.Namespace{Name: namespace}
-	istioConfigDetailPreview.ObjectType = objectType
-	istioConfigDetailPreview.Object = object
-	istioConfigDetailPreview.PreviewData = string(body)
 	err = WriteFile(object, namespace, objectType, body)
 	if err != nil {
 		handleErrorResponse(w, err)
@@ -124,7 +115,7 @@ func IstioConfigCreateOrUpdatePreview(w http.ResponseWriter, r *http.Request) {
 	}
 
 	audit(r, "UPDATE PREVIEW on Namespace: "+namespace+" Type: "+objectType+" Name: "+object+" Patch: "+string(body))
-	RespondWithJSON(w, http.StatusOK, istioConfigDetailPreview)
+	RespondWithBytes(w, http.StatusOK, body)
 }
 
 func getProxySyncMetric(ctx context.Context, namespace string, layer *business.Layer) *AdditionalMetric {

@@ -22,6 +22,12 @@ func RespondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	_, _ = w.Write(response)
 }
 
+func RespondWithBytes(w http.ResponseWriter, code int, payload []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	_, _ = w.Write(payload)
+}
+
 func RespondWithJSONIndent(w http.ResponseWriter, code int, payload interface{}) {
 	response, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
