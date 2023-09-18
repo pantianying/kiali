@@ -666,13 +666,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
   };
 
   renderActionButtons = ({ showOverview, showPreview, onUpdate, onPreview, onRefresh, onCancel }) => {
-    // User won't save if file has yaml errors
-    const yamlErrors = !!(this.state.yamlValidations && this.state.yamlValidations.markers.length > 0);
     return (
       <IstioActionButtonsContainer
         objectName={this.props.match.params.object}
         readOnly={!this.canUpdate()}
-        canUpdate={this.canUpdate() && this.state.isModified && !this.state.isRemoved && !yamlErrors}
+        canUpdate={this.canUpdate()}
         onCancel={onCancel}
         onUpdate={onUpdate}
         onPreview={onPreview}

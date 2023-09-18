@@ -98,6 +98,7 @@ export interface ObjectValidation {
   valid: boolean;
   checks: ObjectCheck[];
   references?: ObjectReference[];
+  isHasPreview?: boolean
 }
 
 export interface ObjectCheck {
