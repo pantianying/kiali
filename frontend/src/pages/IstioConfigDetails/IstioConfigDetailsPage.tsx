@@ -458,6 +458,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
                     serviceReferences={serviceReferences}
                     workloadReferences={workloadReferences}
                     helpMessages={helpMessages}
+                    demo={this.state.istioObjectDetails.demo}
                     selectedLine={this.state.selectedEditorLine}
                   />
                 )}

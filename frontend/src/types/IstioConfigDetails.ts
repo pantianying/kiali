@@ -48,6 +48,7 @@ export interface IstioConfigDetails {
   validation: ObjectValidation;
   references?: References;
   help?: HelpMessage[];
+  demo?: Record<string, any>[]
 }
 
 export const aceOptions: AceOptions = {
