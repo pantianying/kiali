@@ -276,30 +276,6 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       });
   };
 
-  onUpdate = () => {
-    jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
-      const jsonPatch = JSON.stringify(
-        mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
-      ).replace(new RegExp('"(,null)+]', 'g'), '"]');
-      API.updateIstioConfigDetail(
-        this.props.match.params.namespace,
-        this.props.match.params.objectType,
-        this.props.match.params.object,
-        jsonPatch
-      )
-        .then(() => {
-          message.success('保存成功')
-          this.fetchIstioObjectDetails();
-        })
-        .catch(error => {
-          message.error('Could not update IstioConfig details.');
-          this.setState({
-            yamlValidations: this.injectGalleyError(error)
-          });
-        });
-    });
-  };
-
   injectGalleyError = (error: AxiosError): AceValidations => {
     const msg: string[] = API.getErrorString(error).split(':');
     const errMsg: string = msg.slice(1, msg.length).join(':');
@@ -516,6 +492,30 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       </div>
     ) : null;
 
+    const onUpdate = () => {
+      jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
+        const jsonPatch = JSON.stringify(
+          mergeJsonPatch(objectModified, getIstioObject(this.state.istioObjectDetails))
+        ).replace(new RegExp('"(,null)+]', 'g'), '"]');
+        API.updateIstioConfigDetail(
+          this.props.match.params.namespace,
+          this.props.match.params.objectType,
+          this.props.match.params.object,
+          jsonPatch
+        )
+          .then(() => {
+            message.success('保存成功')
+            this.fetchIstioObjectDetails();
+          })
+          .catch(error => {
+            message.error('Could not update IstioConfig details.');
+            this.setState({
+              yamlValidations: this.injectGalleyError(error)
+            });
+          });
+      });
+    };
+
     const onPreview = () => {
       jsYaml.safeLoadAll(this.state.yamlModified, (objectModified: object) => {
         const jsonPatch = JSON.stringify(
@@ -577,6 +577,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         {this.renderActionButtons({
           showOverview: showCards,
           showPreview: true,
+          onUpdate,
           onPreview,
           onRefresh,
           onCancel,
@@ -614,6 +615,29 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       </div>
     ) : null;
 
+    const onUpdate = () => {
+      const jsonPatch = JSON.stringify(
+        mergeJsonPatch(this.state.previewIstioData as object, getIstioObject(this.state.istioObjectDetails))
+      ).replace(new RegExp('"(,null)+]', 'g'), '"]');
+      API.updateIstioConfigDetail(
+        this.props.match.params.namespace,
+        this.props.match.params.objectType,
+        this.props.match.params.object,
+        jsonPatch
+      )
+        .then(() => {
+          message.success('保存成功')
+          this.fetchIstioObjectDetails();
+        })
+        .catch(error => {
+          message.error('Could not update IstioConfig details.');
+          this.setState({
+            yamlValidations: this.injectGalleyError(error)
+          });
+        });
+
+    }
+
     const onPreview = () => {
 
     }
@@ -632,6 +656,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         {this.renderActionButtons({
           showOverview: false,
           showPreview: false,
+          onUpdate,
           onPreview,
           onRefresh,
           onCancel,
@@ -640,7 +665,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     );
   };
 
-  renderActionButtons = ({ showOverview, showPreview, onPreview, onRefresh, onCancel }) => {
+  renderActionButtons = ({ showOverview, showPreview, onUpdate, onPreview, onRefresh, onCancel }) => {
     // User won't save if file has yaml errors
     const yamlErrors = !!(this.state.yamlValidations && this.state.yamlValidations.markers.length > 0);
     return (
@@ -649,7 +674,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         readOnly={!this.canUpdate()}
         canUpdate={this.canUpdate() && this.state.isModified && !this.state.isRemoved && !yamlErrors}
         onCancel={onCancel}
-        onUpdate={this.onUpdate}
+        onUpdate={onUpdate}
         onPreview={onPreview}
         onRefresh={onRefresh}
         showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
