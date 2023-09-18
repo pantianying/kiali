@@ -3,12 +3,14 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"github.com/kiali/kiali/models"
 	"os"
 )
 
 const dataDirPrefix = "/opt/kiali/db/previews"
 
 func ReadReleasingConfigFile(name, namespace, objectType string) []byte {
+	objectType = toObjectTypeSingular(objectType)
 	path := dataDirPrefix + "/" + namespace + "/" + objectType + "/" + name
 	file, err := os.ReadFile(path)
 	if err != nil {
@@ -19,6 +21,7 @@ func ReadReleasingConfigFile(name, namespace, objectType string) []byte {
 }
 
 func WriteFile(name, namespace, objectType string, buff []byte) error {
+	objectType = toObjectTypeSingular(objectType)
 	dirPath := dataDirPrefix + "/" + namespace + "/" + objectType + "/"
 	if !isExist(dirPath) {
 		err := os.MkdirAll(dirPath, 0777)
@@ -52,6 +55,7 @@ func isExist(path string) bool {
 }
 
 func RemoveFile(name, namespace, objectType string) error {
+	objectType = toObjectTypeSingular(objectType)
 	path := dataDirPrefix + "/" + namespace + "/" + objectType + "/" + name
 	if !isExist(path) {
 		return errors.New("file not exist")
@@ -65,6 +69,14 @@ func RemoveFile(name, namespace, objectType string) error {
 }
 
 func IsExistFile(name, namespace, objectType string) bool {
+	objectType = toObjectTypeSingular(objectType)
 	path := dataDirPrefix + "/" + namespace + "/" + objectType + "/" + name
 	return isExist(path)
+}
+
+func toObjectTypeSingular(typeName string) string {
+	if v, ok := models.ObjectTypeSingular[typeName]; ok {
+		return v
+	}
+	return typeName
 }

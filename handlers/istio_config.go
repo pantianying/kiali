@@ -270,6 +270,13 @@ func IstioConfigUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	audit(r, "UPDATE on Namespace: "+namespace+" Type: "+objectType+" Name: "+object+" Patch: "+jsonPatch)
+
+	err = RemoveFile(object, namespace, objectType)
+	if err != nil {
+		log.Errorf("remove file error: %s", err.Error())
+		return
+	}
+
 	RespondWithJSON(w, http.StatusOK, updatedConfigDetails)
 }
 
