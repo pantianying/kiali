@@ -22,6 +22,7 @@ import IstioConfigHelp from './IstioConfigHelp';
 import IstioConfigReferences from './IstioConfigReferences';
 import IstioConfigValidationReferences from './IstioConfigValidationReferences';
 import IstioStatusMessageList from './IstioStatusMessageList';
+import IstionConfigDemo from './IstioConfigDemo';
 
 interface IstioConfigOverviewProps {
   istioObjectDetails: IstioConfigDetails;
@@ -33,6 +34,7 @@ interface IstioConfigOverviewProps {
   workloadReferences: WorkloadReference[];
   helpMessages?: HelpMessage[];
   selectedLine?: string;
+  demo?: Record<string,any>[]
 }
 
 const iconStyle = style({
@@ -167,6 +169,15 @@ class IstioConfigOverview extends React.Component<IstioConfigOverviewProps> {
             ></IstioConfigHelp>
           </StackItem>
         )}
+
+        {this.props.demo && this.props.demo.length > 0 && (
+          <StackItem>
+            <IstionConfigDemo
+              list={this.props.demo}
+            ></IstionConfigDemo>
+          </StackItem>
+        )}
+
       </Stack>
     );
   }
