@@ -17,6 +17,7 @@ type UserProps = {
   session?: LoginSession;
   logout: () => void;
   extendSession: (session: LoginSession) => void;
+  userInfo?: Record<string, any> | null
 };
 
 type UserState = {
@@ -130,7 +131,7 @@ class UserDropdownConnected extends React.Component<UserProps, UserState> {
           timeOutCountDown={this.state.timeCountDownSeconds}
         />
         {this.props.session && !canLogout && (
-          <>{this.props.session.username}</>
+          <>{this.props.userInfo?.username}</>
         )}
         {this.props.session && canLogout && (
           <Dropdown
@@ -140,7 +141,7 @@ class UserDropdownConnected extends React.Component<UserProps, UserState> {
             isOpen={isDropdownOpen}
             toggle={
               <DropdownToggle id={'user-dropdown-toggle'} onToggle={this.onDropdownToggle}>
-                {this.props.session.username}
+                {this.props.userInfo?.username}
               </DropdownToggle>
             }
             dropdownItems={[userDropdownItems]}
@@ -161,7 +162,8 @@ class UserDropdownConnected extends React.Component<UserProps, UserState> {
 }
 
 const mapStateToProps = (state: KialiAppState) => ({
-  session: state.authentication.session
+  session: state.authentication.session,
+  userInfo: state.userSettings.userInfo,
 });
 
 const mapDispatchToProps = (dispatch: KialiDispatch) => ({

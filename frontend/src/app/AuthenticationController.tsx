@@ -339,7 +339,7 @@ export class AuthenticationController extends React.Component<
   private setDocLayout = () => {
     if (document.documentElement) {
       const isKiosk = isKioskMode();
-      document.documentElement.className = isKiosk ? 'kiosk' : '';
+      document.documentElement.className = !isKiosk ? 'kiosk' : ''; // 取反
       store.dispatch(GlobalActions.setKiosk(getKioskMode()));
     }
   };
