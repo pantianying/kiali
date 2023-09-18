@@ -170,21 +170,21 @@ export const filterByConfigValidation = (unfiltered: IstioConfigItem[], configFi
   const filterByNotValid = configFilters.indexOf('Not Valid') > -1;
   const filterByNotValidated = configFilters.indexOf('Not Validated') > -1;
   const filterByWarning = configFilters.indexOf('Warning') > -1;
-  if (filterByValid && filterByNotValid && filterByNotValidated && filterByWarning) {
+  const filterByPreview = configFilters.indexOf('待发布') > -1;
+  if (filterByValid && filterByNotValid && filterByNotValidated && filterByWarning && filterByPreview) {
     return unfiltered;
   }
 
   unfiltered.forEach(item => {
     if (filterByValid && item.validation && item.validation.valid) {
       filtered.push(item);
-    }
-    if (filterByNotValid && item.validation && !item.validation.valid) {
+    } else if (filterByNotValid && item.validation && !item.validation.valid) {
       filtered.push(item);
-    }
-    if (filterByNotValidated && !item.validation) {
+    } else if (filterByNotValidated && !item.validation) {
       filtered.push(item);
-    }
-    if (filterByWarning && item.validation && item.validation.checks.filter(i => i.severity === 'warning').length > 0) {
+    } else if (filterByWarning && item.validation && item.validation.checks.filter(i => i.severity === 'warning').length > 0) {
+      filtered.push(item);
+    } else if (filterByPreview && item.validation && item.validation.isHasPreview) {
       filtered.push(item);
     }
   });

@@ -161,6 +161,10 @@ export const configValidationFilter: FilterType = {
     {
       id: 'notvalidated',
       title: 'Not Validated'
+    },
+    {
+      id: 'preview',
+      title: '待发布',
     }
   ]
 };
