@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/kiali/kiali/log"
 	"net/http"
+	"strings"
 )
 
 var (
@@ -20,8 +21,9 @@ func init() {
 	}
 	appToken = t
 	adminUser = map[string]struct{}{
-		"yangchun": {},
-		"cangfeng": {},
+		"yangchun@dian.so": {},
+		"cangfeng@dian.so": {},
+		"chenglin@dian.so": {},
 	}
 }
 
@@ -149,11 +151,22 @@ func getUserInfo(token string) (*UserInfo, error) {
 	return &responseBody.Data, nil
 }
 
-func IsAdminUser(username string) bool {
-	_, ok := adminUser[username]
-	return ok
+func IsAdminUser(emailOrUser string) bool {
+	_, ok := adminUser[emailOrUser]
+	if ok {
+		return true
+	}
+	_, ok = adminUser[strings.Split(emailOrUser, "@")[0]]
+	if ok {
+		return true
+	}
+	_, ok = adminUser[emailOrUser+"@dian.so"]
+	if ok {
+		return true
+	}
+	return false
 }
 
-func IsDeveloperUser(username string) bool {
+func IsDeveloperUser(emailOrUser string) bool {
 	return true
 }
