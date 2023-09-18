@@ -506,6 +506,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
           .then(() => {
             message.success('保存成功')
             this.fetchIstioObjectDetails();
+            this.fetchPreviewIstioObjectDetails();
           })
           .catch(error => {
             message.error('Could not update IstioConfig details.');
@@ -628,6 +629,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         .then(() => {
           message.success('保存成功')
           this.fetchIstioObjectDetails();
+          this.fetchPreviewIstioObjectDetails();
+          jumpTab('yaml')
+          this.setState({
+            currentTab: 'yaml'
+          })
         })
         .catch(error => {
           message.error('Could not update IstioConfig details.');
