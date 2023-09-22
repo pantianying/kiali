@@ -85,7 +85,7 @@ var IstioConfigHelpDemos = map[string][]IstioConfigHelpDemo{
 	"destinationrules": {
 		{
 			DemoName: "限流配置",
-			Desc:     "以上配置 限制客户端调用avatar时，最大连接数也就是最大并发数为：40，当达到最大并发请求时，http请求缓冲队列长度为10，连接空闲释放的判断时间为15s",
+			Desc:     "以上配置 限制客户端调用avatar时，最大连接数也就是最大并发数为：40，当达到最大并发请求时，http请求缓冲队列长度为10，连接空闲释放的判断时间为15s,destinationRule的配置如下：https://istio.io/latest/docs/reference/config/networking/destination-rule",
 			Config: networking_v1beta1.DestinationRule{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "avatar",
@@ -107,6 +107,55 @@ var IstioConfigHelpDemos = map[string][]IstioConfigHelpDemo{
 				},
 			},
 		},
+	},
+	"virtualservices": {
+		{
+			DemoName: "流量按header参数灰度配置",
+			Desc:     "以上配置将header中存在userid为100001的用户请求发送到指定版本的avatar应用中 , virtualservice其他配置具体文档：https://istio.io/latest/docs/reference/config/networking/virtual-service",
+			Config: networking_v1beta1.VirtualService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "avatar",
+					Namespace: "dian-pre",
+				},
+				Spec: networkingv1beta1.VirtualService{
+					Hosts: []string{"avatar"},
+					Http: []*networkingv1beta1.HTTPRoute{
+						{
+							Match: []*networkingv1beta1.HTTPMatchRequest{
+								{
+									Headers: map[string]*networkingv1beta1.StringMatch{
+										"userid": {
+											MatchType: &networkingv1beta1.StringMatch_Exact{
+												Exact: "100001",
+											},
+										},
+									},
+								},
+							},
+							Route: []*networkingv1beta1.HTTPRouteDestination{
+								{
+									Destination: &networkingv1beta1.Destination{
+										Host:   "avatar",
+										Subset: "v1",
+									},
+								},
+							},
+						},
+						{
+							Route: []*networkingv1beta1.HTTPRouteDestination{
+								{
+									Destination: &networkingv1beta1.Destination{
+										Host:   "avatar",
+										Subset: "v2",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{},
 	},
 }
 
