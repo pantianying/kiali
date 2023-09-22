@@ -843,7 +843,7 @@ export class OverviewPage extends React.Component<OverviewProps, State> {
     const namespaceActions = filteredNamespaces.map((ns, i) => {
       const actions = this.getNamespaceActions(ns);
       const authFilter = (list) => { // 仅管理员才可以访问的菜单
-        const needFilterMenus = ['Applications', 'Workloads', 'Services', 'Enable Auto Injection', 'Create  Traffic Policies']
+        const needFilterMenus = ['Workloads', 'Services', 'Enable Auto Injection', 'Create  Traffic Policies']
         return list.filter((item) => {
           if (Array.isArray(item.children))item.children = authFilter(item.children)
           return this.props.userInfo?.identity === UserIdentityEnum.administrator || !needFilterMenus.includes(item.title)
