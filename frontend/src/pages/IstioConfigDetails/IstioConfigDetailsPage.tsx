@@ -11,7 +11,7 @@ import {
 } from '../../types/IstioConfigDetails';
 import * as AlertUtils from '../../utils/AlertUtils';
 import * as API from '../../services/Api';
-import AceEditor from 'react-ace';
+import AceEditor, { diff as DiffEditor } from 'react-ace';
 import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-eclipse';
 import {
@@ -47,6 +47,8 @@ import {
   DrawerContentBody,
   DrawerHead,
   DrawerPanelContent,
+  Modal,
+  ModalVariant,
   Tab
 } from '@patternfly/react-core';
 import { dicIstioType } from '../../types/IstioConfigList';
@@ -89,6 +91,10 @@ interface IstioConfigDetailsState {
   isExpanded: boolean;
   selectedEditorLine?: string;
   error?: ErrorMsg;
+  diffModal: {
+    visible: boolean;
+    data: null | Record<string, any>;
+  }
 }
 
 const tabName = 'list';
@@ -115,7 +121,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       isModified: false,
       isRemoved: false,
       currentTab: activeTab(tabName, this.defaultTab()),
-      isExpanded: false
+      isExpanded: false,
+      diffModal: {
+        visible: false,
+        data: null,
+      }
     };
     this.aceEditorRef = React.createRef();
     this.drawerRef = React.createRef();
@@ -565,6 +575,9 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       this.backToList();
     };
 
+    const onDiff = () => {
+    }
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {showCards ? (
@@ -579,10 +592,12 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         {this.renderActionButtons({
           showOverview: showCards,
           showPreview: true,
+          showDiff: false,
           onUpdate,
           onPreview,
           onRefresh,
           onCancel,
+          onDiff,
         })}
       </div>
     );
@@ -657,22 +672,39 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       this.backToList();
     };
 
+    const onDiff = () => {
+      const value = this.fetchYaml();
+      const previewValue = this.state.previewIstioData ? jsYaml.safeDump(this.state.previewIstioData, safeDumpOptions) : ''
+
+      this.setState({
+        diffModal: {
+          visible: true,
+          data: {
+            value,
+            previewValue,
+          },
+        }
+      })
+    }
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {editor}
         {this.renderActionButtons({
           showOverview: false,
           showPreview: false,
+          showDiff: true,
           onUpdate,
           onPreview,
           onRefresh,
           onCancel,
+          onDiff,
         })}
       </div>
     );
   };
 
-  renderActionButtons = ({ showOverview, showPreview, onUpdate, onPreview, onRefresh, onCancel }) => {
+  renderActionButtons = ({ showOverview, showPreview, showDiff, onUpdate, onPreview, onRefresh, onCancel, onDiff }) => {
     return (
       <IstioActionButtonsContainer
         objectName={this.props.match.params.object}
@@ -682,9 +714,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         onUpdate={onUpdate}
         onPreview={onPreview}
         onRefresh={onRefresh}
+        onDiff={onDiff}
         showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
         showPreview={showPreview && Boolean(this.state.istioObjectDetails?.permissions.preview)}
         showOverview={showOverview}
+        showDiff={showDiff}
         overview={this.state.isExpanded}
         onOverview={this.onDrawerToggle}
       />
@@ -709,6 +743,15 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       </span>
     );
   };
+
+  handleDiffModalClose = () => {
+    this.setState({
+      diffModal: {
+        visible: false,
+        data: null
+      }
+    })
+  }
 
   render() {
     return (
@@ -771,6 +814,19 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             return true;
           }}
         />
+        <Modal
+          width="1100px"
+          variant={ModalVariant.small}
+          isOpen={this.state.diffModal.visible}
+          onClose={this.handleDiffModalClose}
+        >
+          <DiffEditor
+            value={[this.state.diffModal.data?.value, this.state.diffModal.data?.previewValue]}
+            height="1000px"
+            width="1000px"
+            mode="text"
+          />
+        </Modal>
       </>
     );
   }

@@ -13,8 +13,10 @@ type Props = {
   showSave: boolean;
   showPreview: boolean;
   showOverview: boolean;
+  showDiff: boolean;
   overview: boolean;
   onOverview: () => void;
+  onDiff: () => void
 };
 
 type State = {
@@ -46,7 +48,16 @@ class IstioActionButtons extends React.Component<Props, State> {
                <Button variant={ButtonVariant.primary} onClick={this.props.onPreview}>
                  提交审核
               </Button>
-          </span>
+             </span>
+            )
+          }
+          {
+            this.props.showDiff && (
+              <span style={{ paddingRight: '5px' }}>
+                <Button variant={ButtonVariant.secondary} onClick={this.props.onDiff}>
+                  差异对比
+               </Button>
+             </span>
             )
           }
           <span style={{ paddingRight: '5px' }}>

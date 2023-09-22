@@ -28,6 +28,12 @@ body {
   height: 100%;
 }
 
+.codeMarker {
+  background-color: #ffff99 ;
+  position: absolute ;
+  z-index: 20;
+}
+
 // Component
 @import '../components/VirtualList/_VirtualList';
 @import '../components/JaegerIntegration/JaegerResults/_SpanTable';
