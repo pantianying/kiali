@@ -837,6 +837,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             height="1000px"
             width="1000px"
             mode="yaml"
+            theme="eclipse"
           />
         </Modal>
       </>
