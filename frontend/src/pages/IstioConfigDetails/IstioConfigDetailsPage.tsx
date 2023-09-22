@@ -58,7 +58,7 @@ import RefreshContainer from "../../components/Refresh/Refresh";
 import IstioConfigOverview from './IstioObjectDetails/IstioConfigOverview';
 import { Annotation } from 'react-ace/types';
 import RenderHeaderContainer from "../../components/Nav/Page/RenderHeader";
-import {ErrorMsg} from "../../types/ErrorMsg";
+import { ErrorMsg } from "../../types/ErrorMsg";
 import ErrorSection from "../../components/ErrorSection/ErrorSection";
 import { KialiAppState } from '../../store/Store'
 
@@ -103,7 +103,7 @@ const paramToTab: { [key: string]: number } = {
   preview: 1,
 };
 
-const jumpTab = (tabKey: string)=>{
+const jumpTab = (tabKey: string) => {
   const urlParams = new URLSearchParams('');
   urlParams.set(tabName, tabKey);
   history.push(history.location.pathname + '?' + urlParams.toString());
@@ -188,7 +188,10 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         );
       })
       .catch(error => {
-        const msg : ErrorMsg = {title: 'No Istio object is selected', description: this.props.match.params.object +" is not found in the mesh"};
+        const msg: ErrorMsg = {
+          title: 'No Istio object is selected',
+          description: this.props.match.params.object + " is not found in the mesh"
+        };
         this.setState({
           isRemoved: true,
           error: msg
@@ -476,7 +479,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             )}
           </div>
           <DrawerActions>
-            <DrawerCloseButton onClick={this.onDrawerClose} />
+            <DrawerCloseButton onClick={this.onDrawerClose}/>
           </DrawerActions>
         </DrawerHead>
       </DrawerPanelContent>
@@ -545,7 +548,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             this.setState({ // 先修正修改状态
               isModified: false,
               yamlModified: '',
-            },()=>{  // 修正后跳转，否则会有提示
+            }, () => {  // 修正后跳转，否则会有提示
               jumpTab('preview')
               this.setState({
                 currentTab: 'preview'
@@ -758,11 +761,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       <>
         <RenderHeaderContainer
           location={this.props.location}
-          rightToolbar={<RefreshContainer id="config_details_refresh" hideLabel={true} />}
+          rightToolbar={<RefreshContainer id="config_details_refresh" hideLabel={true}/>}
           actionsToolbar={!this.state.error ? this.renderActions() : undefined}
         />
         {this.state.error && (
-          <ErrorSection error={this.state.error} />
+          <ErrorSection error={this.state.error}/>
         )}
         {!this.state.error && (
           <>
@@ -815,16 +818,25 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
           }}
         />
         <Modal
+          title="差异对比"
           width="1100px"
           variant={ModalVariant.small}
           isOpen={this.state.diffModal.visible}
           onClose={this.handleDiffModalClose}
         >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around'
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 500 }}>当前</div>
+            <div style={{ fontSize: 18, fontWeight: 500 }}>待发布</div>
+          </div>
           <DiffEditor
+            readOnly
             value={[this.state.diffModal.data?.value, this.state.diffModal.data?.previewValue]}
             height="1000px"
             width="1000px"
-            mode="text"
+            mode="yaml"
           />
         </Modal>
       </>
