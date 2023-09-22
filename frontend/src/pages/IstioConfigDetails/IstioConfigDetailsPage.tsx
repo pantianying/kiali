@@ -11,7 +11,7 @@ import {
 } from '../../types/IstioConfigDetails';
 import * as AlertUtils from '../../utils/AlertUtils';
 import * as API from '../../services/Api';
-import AceEditor from 'react-ace';
+import AceEditor, { diff as DiffEditor } from 'react-ace';
 import 'ace-builds/src-noconflict/mode-yaml';
 import 'ace-builds/src-noconflict/theme-eclipse';
 import {
@@ -47,6 +47,8 @@ import {
   DrawerContentBody,
   DrawerHead,
   DrawerPanelContent,
+  Modal,
+  ModalVariant,
   Tab
 } from '@patternfly/react-core';
 import { dicIstioType } from '../../types/IstioConfigList';
@@ -56,7 +58,7 @@ import RefreshContainer from "../../components/Refresh/Refresh";
 import IstioConfigOverview from './IstioObjectDetails/IstioConfigOverview';
 import { Annotation } from 'react-ace/types';
 import RenderHeaderContainer from "../../components/Nav/Page/RenderHeader";
-import {ErrorMsg} from "../../types/ErrorMsg";
+import { ErrorMsg } from "../../types/ErrorMsg";
 import ErrorSection from "../../components/ErrorSection/ErrorSection";
 import { KialiAppState } from '../../store/Store'
 
@@ -89,6 +91,10 @@ interface IstioConfigDetailsState {
   isExpanded: boolean;
   selectedEditorLine?: string;
   error?: ErrorMsg;
+  diffModal: {
+    visible: boolean;
+    data: null | Record<string, any>;
+  }
 }
 
 const tabName = 'list';
@@ -97,7 +103,7 @@ const paramToTab: { [key: string]: number } = {
   preview: 1,
 };
 
-const jumpTab = (tabKey: string)=>{
+const jumpTab = (tabKey: string) => {
   const urlParams = new URLSearchParams('');
   urlParams.set(tabName, tabKey);
   history.push(history.location.pathname + '?' + urlParams.toString());
@@ -115,7 +121,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       isModified: false,
       isRemoved: false,
       currentTab: activeTab(tabName, this.defaultTab()),
-      isExpanded: false
+      isExpanded: false,
+      diffModal: {
+        visible: false,
+        data: null,
+      }
     };
     this.aceEditorRef = React.createRef();
     this.drawerRef = React.createRef();
@@ -178,7 +188,10 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         );
       })
       .catch(error => {
-        const msg : ErrorMsg = {title: 'No Istio object is selected', description: this.props.match.params.object +" is not found in the mesh"};
+        const msg: ErrorMsg = {
+          title: 'No Istio object is selected',
+          description: this.props.match.params.object + " is not found in the mesh"
+        };
         this.setState({
           isRemoved: true,
           error: msg
@@ -466,7 +479,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             )}
           </div>
           <DrawerActions>
-            <DrawerCloseButton onClick={this.onDrawerClose} />
+            <DrawerCloseButton onClick={this.onDrawerClose}/>
           </DrawerActions>
         </DrawerHead>
       </DrawerPanelContent>
@@ -535,7 +548,7 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             this.setState({ // 先修正修改状态
               isModified: false,
               yamlModified: '',
-            },()=>{  // 修正后跳转，否则会有提示
+            }, () => {  // 修正后跳转，否则会有提示
               jumpTab('preview')
               this.setState({
                 currentTab: 'preview'
@@ -565,6 +578,9 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       this.backToList();
     };
 
+    const onDiff = () => {
+    }
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {showCards ? (
@@ -579,10 +595,12 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         {this.renderActionButtons({
           showOverview: showCards,
           showPreview: true,
+          showDiff: false,
           onUpdate,
           onPreview,
           onRefresh,
           onCancel,
+          onDiff,
         })}
       </div>
     );
@@ -657,22 +675,39 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
       this.backToList();
     };
 
+    const onDiff = () => {
+      const value = this.fetchYaml();
+      const previewValue = this.state.previewIstioData ? jsYaml.safeDump(this.state.previewIstioData, safeDumpOptions) : ''
+
+      this.setState({
+        diffModal: {
+          visible: true,
+          data: {
+            value,
+            previewValue,
+          },
+        }
+      })
+    }
+
     return (
       <div className={`object-drawer ${editorDrawer}`}>
         {editor}
         {this.renderActionButtons({
           showOverview: false,
           showPreview: false,
+          showDiff: true,
           onUpdate,
           onPreview,
           onRefresh,
           onCancel,
+          onDiff,
         })}
       </div>
     );
   };
 
-  renderActionButtons = ({ showOverview, showPreview, onUpdate, onPreview, onRefresh, onCancel }) => {
+  renderActionButtons = ({ showOverview, showPreview, showDiff, onUpdate, onPreview, onRefresh, onCancel, onDiff }) => {
     return (
       <IstioActionButtonsContainer
         objectName={this.props.match.params.object}
@@ -682,9 +717,11 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
         onUpdate={onUpdate}
         onPreview={onPreview}
         onRefresh={onRefresh}
+        onDiff={onDiff}
         showSave={Boolean(this.state.istioObjectDetails?.permissions.update)}
         showPreview={showPreview && Boolean(this.state.istioObjectDetails?.permissions.preview)}
         showOverview={showOverview}
+        showDiff={showDiff}
         overview={this.state.isExpanded}
         onOverview={this.onDrawerToggle}
       />
@@ -710,16 +747,25 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
     );
   };
 
+  handleDiffModalClose = () => {
+    this.setState({
+      diffModal: {
+        visible: false,
+        data: null
+      }
+    })
+  }
+
   render() {
     return (
       <>
         <RenderHeaderContainer
           location={this.props.location}
-          rightToolbar={<RefreshContainer id="config_details_refresh" hideLabel={true} />}
+          rightToolbar={<RefreshContainer id="config_details_refresh" hideLabel={true}/>}
           actionsToolbar={!this.state.error ? this.renderActions() : undefined}
         />
         {this.state.error && (
-          <ErrorSection error={this.state.error} />
+          <ErrorSection error={this.state.error}/>
         )}
         {!this.state.error && (
           <>
@@ -771,6 +817,29 @@ class IstioConfigDetailsPage extends React.Component<ReduxProps & RouteComponent
             return true;
           }}
         />
+        <Modal
+          title="差异对比"
+          width="1100px"
+          variant={ModalVariant.small}
+          isOpen={this.state.diffModal.visible}
+          onClose={this.handleDiffModalClose}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-around'
+          }}>
+            <div style={{ fontSize: 18, fontWeight: 500 }}>当前</div>
+            <div style={{ fontSize: 18, fontWeight: 500 }}>待发布</div>
+          </div>
+          <DiffEditor
+            readOnly
+            value={[this.state.diffModal.data?.value, this.state.diffModal.data?.previewValue]}
+            height="1000px"
+            width="1000px"
+            mode="yaml"
+            theme="eclipse"
+          />
+        </Modal>
       </>
     );
   }
