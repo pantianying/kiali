@@ -54,19 +54,19 @@ class IstioConfigDemo extends React.Component<IstioConfigHelpProps, IstioConfigH
     helpAnnotations.forEach(ha => editorValidations.annotations.push(ha));
 
     return (
-        <AceEditor
-          mode="yaml"
-          theme="eclipse"
-          height='600px'
-          width={'100%'}
-          className={'istio-ace-editor'}
-          wrapEnabled={true}
-          readOnly={true}
-          setOptions={aceOptions}
-          value={yamlSource ? yamlSource : undefined}
-          annotations={editorValidations.annotations}
-          markers={editorValidations.markers}
-        />
+      <AceEditor
+        mode="yaml"
+        theme="eclipse"
+        height='600px'
+        width={'100%'}
+        className={'istio-ace-editor'}
+        wrapEnabled={true}
+        readOnly={true}
+        setOptions={aceOptions}
+        value={yamlSource ? yamlSource : undefined}
+        annotations={editorValidations.annotations}
+        markers={editorValidations.markers}
+      />
     )
   }
 
@@ -100,10 +100,19 @@ class IstioConfigDemo extends React.Component<IstioConfigHelpProps, IstioConfigH
         </Stack>
 
         <Modal
+          width={700}
           variant={ModalVariant.small}
           isOpen={Boolean(this.state.selectItem)}
           onClose={this.handleModalClose}
           title={this.state.selectItem?.demoName || 'demo配置'}>
+          {
+            this.state.selectItem?.desc && (
+              <div style={{
+                marginBottom: 15,
+                color: 'rgb(43, 154, 243)'
+              }}>{this.state.selectItem?.desc}</div>
+            )
+          }
           {
             this.renderEditor()
           }
