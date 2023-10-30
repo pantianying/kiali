@@ -155,7 +155,66 @@ var IstioConfigHelpDemos = map[string][]IstioConfigHelpDemo{
 				},
 			},
 		},
-		{},
+		{
+			DemoName: "配置客户端超时时间",
+			Desc:     "注意 mesh中的配置如果没有指定seletor，默认会在所有的pod中中生效。如下demo中, 所有应用调用host为avatar时，客户端超时时间为5s。",
+			Config: networking_v1beta1.VirtualService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "avatar",
+					Namespace: "dian-pre",
+				},
+				Spec: networkingv1beta1.VirtualService{
+					Hosts: []string{"avatar"},
+					Http: []*networkingv1beta1.HTTPRoute{
+						{
+							Timeout: &duration.Duration{Seconds: int64(5)},
+						},
+					},
+				},
+			},
+		},
+		{
+			DemoName: "配置只在指定的应用中生效",
+			Desc:     "如下demo中, 客户端超时15s只会在dna-alteration客户端中生效,其他应用还是5s。",
+			Config: networking_v1beta1.VirtualService{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "avatar",
+					Namespace: "dian-pre",
+				},
+				Spec: networkingv1beta1.VirtualService{
+					Hosts: []string{"avatar"},
+					Http: []*networkingv1beta1.HTTPRoute{
+						{
+							Match: []*networkingv1beta1.HTTPMatchRequest{
+								{
+									SourceLabels: map[string]string{
+										"app": "dna-alteration",
+									},
+								},
+							},
+							Timeout: &duration.Duration{Seconds: int64(15)},
+							Route: []*networkingv1beta1.HTTPRouteDestination{
+								{
+									Destination: &networkingv1beta1.Destination{
+										Host: "avatar",
+									},
+								},
+							},
+						},
+						{
+							Timeout: &duration.Duration{Seconds: int64(5)},
+							Route: []*networkingv1beta1.HTTPRouteDestination{
+								{
+									Destination: &networkingv1beta1.Destination{
+										Host: "avatar",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	},
 }
 

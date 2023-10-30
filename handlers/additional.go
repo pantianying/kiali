@@ -277,6 +277,7 @@ func UserTokenHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := getUserToken(code)
 	if err != nil {
+		log.Warningf("get user token error: %v", err)
 		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
@@ -304,7 +305,7 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 	RespondWithJSON(w, http.StatusOK, userInfo)
 }
 
-func getPermissionsByUser(email, object, namespace string) (bool, bool, bool, bool) {
+func getPermissionsByEmail(email, object, namespace string) (bool, bool, bool, bool) {
 	var canCreate, canPatch, canDelete, canPreview bool
 	if IsAdminUser(email) {
 		canCreate, canPatch, canDelete, canPreview = true, true, true, true
@@ -320,10 +321,12 @@ func getPermissionsByUser(email, object, namespace string) (bool, bool, bool, bo
 }
 
 func mergeUserPermissions(user *UserInfo, object, namespace string, permissions *models.ResourcePermissions) {
-	canCreate, canPatch, canDelete, canPreview := getPermissionsByUser(user.Username, object, namespace)
-	permissions.Create = canCreate || permissions.Create
-	permissions.Update = canPatch || permissions.Update
-	permissions.Delete = canDelete || permissions.Delete
+	canCreate, canPatch, canDelete, canPreview := getPermissionsByEmail(user.Mail, object, namespace)
+	//log.Infof("user: %v, canCreate: %v, canPatch: %v, canDelete: %v, canPreview: %v", user.Mail, canCreate, canPatch, canDelete, canPreview)
+	//log.Infof("permissions: %v", permissions)
+	permissions.Create = canCreate && permissions.Create
+	permissions.Update = canPatch && permissions.Update
+	permissions.Delete = canDelete && permissions.Delete
 	// 原来并没有preview权限，这里加上
 	permissions.Preview = canPreview
 	return
