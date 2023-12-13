@@ -7,6 +7,7 @@ import (
 	"github.com/kiali/kiali/log"
 	"net/http"
 	"strings"
+	"time"
 )
 
 var (
@@ -15,11 +16,17 @@ var (
 )
 
 func init() {
-	t, err := AppToken()
-	if err != nil {
-		panic(err)
-	}
-	appToken = t
+	go func() {
+		for {
+			t, err := AppToken()
+			if err != nil {
+				panic(err)
+			}
+			appToken = t
+			time.Sleep(time.Hour * 24)
+		}
+	}()
+
 	adminUser = map[string]struct{}{
 		"yangchun@dian.so": {},
 		"cangfeng@dian.so": {},
@@ -79,7 +86,10 @@ func AppToken() (string, error) {
 	return responseBody.Data.AccessToken, nil
 }
 
-func getUserToken(Code string) (*UserTokenInfo, error) {
+func getUserToken(code string) (*UserTokenInfo, error) {
+	if code == "" {
+		return nil, errors.New("code is empty")
+	}
 	domainUrl := "https://prod-auth-dapp.apps.hub.l2s4.p1.dian-sit.com"
 	type ReqBodyStu struct {
 		Code      string `json:"code"`
@@ -91,7 +101,7 @@ func getUserToken(Code string) (*UserTokenInfo, error) {
 		Data UserTokenInfo `json:"data"`
 	}
 	reqBody := ReqBodyStu{
-		Code:      Code,
+		Code:      code,
 		GrantType: "authorization_code",
 	}
 
@@ -114,7 +124,7 @@ func getUserToken(Code string) (*UserTokenInfo, error) {
 	}
 
 	if responseBody.Code != 0 {
-		log.Warning("get user token error: ", responseBody)
+		log.Warning("get user token responseBody.Code!=0", responseBody)
 		return nil, errors.New("get user token error")
 	}
 	return &responseBody.Data, nil
