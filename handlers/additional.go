@@ -130,12 +130,11 @@ func getProxySyncMetric(ctx context.Context, namespace string, layer *business.L
 
 	syncedProxiesNum := 0
 	unSyncedProxiesNum := 0
+	log.Infof("getProxySyncMetric podList len: %v", len(podList))
 
 	for _, p := range podList {
-		if p.ProxyStatus == nil {
-			continue
-		}
 		if !p.HasIstioSidecar() {
+			log.Infof("pod %v has no istio sidecar", p.Name)
 			continue
 		}
 		ps := layer.ProxyStatus.GetPodProxyStatus(namespace, p.Name)

@@ -20,6 +20,8 @@ import (
 	"github.com/kiali/kiali/prometheus/internalmetrics"
 )
 
+const HubkialiUrl = "https://kiali-xiaodian-istio-system.apps.hub.l2s4.p1.dian-sit.com/"
+
 // NewRouter creates the router with all API routes and the static files handler
 func NewRouter() *mux.Router {
 
@@ -102,7 +104,7 @@ func NewRouter() *mux.Router {
 	})
 
 	appRouter.PathPrefix("/hub").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		doProxy("hub", "https://kiali-istio-system.apps.hub.l2s4.p1.dian-sit.com/", w, r)
+		doProxy("hub", HubkialiUrl, w, r)
 	})
 
 	appRouter.PathPrefix("/prod").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

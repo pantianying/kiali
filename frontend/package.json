@@ -1,7 +1,7 @@
 {
   "name": "@kiali/kiali-ui",
   "version": "1.57.11",
-  "proxy": "https://kiali-istio-system.apps.hub.l2s4.p1.dian-sit.com",
+  "proxy": "https://kiali-xiaodian-istio-system.apps.hub.l2s4.p1.dian-sit.com",
   "description": "React UI for [Kiali](https://github.com/kiali/kiali).",
   "keywords": [
     "istio service mesh",
